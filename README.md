@@ -25,6 +25,10 @@ Private application for managing Engagifii variable compensation plans, HubSpot-
 
 Do not commit HubSpot service keys, Supabase service-role keys, passwords, access tokens, or local environment files. Secrets belong in Supabase Vault or deployment environment variables.
 
+## Data notice
+
+This private repository contains exact internal dashboard source, including employee names and compensation figures displayed by the application. Access should remain restricted to authorized Engagifii personnel.
+
 ## Next implementation milestone
 
 Apply refresh deltas safely to current earnings while preserving lifecycle events, management review requirements, reversals, and chargeback history.
