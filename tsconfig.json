@@ -32,9 +32,9 @@
   ],
   "exclude": [
   "node_modules",
-  "db",
-  "worker",
-  "build",
+  "db/**/*",
+  "worker/**/*",
+  "build/**/*",
   "vite.config.ts"
 ]
 }
