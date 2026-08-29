@@ -17,7 +17,7 @@ const admin=[["hubspot","HubSpot Integration",RefreshCw],["rules","Rules & Calcu
 const employee=[["dashboard","My Dashboard",LayoutDashboard],["plans","My Plan",FileCheck2],["employees","My Earnings",BarChart3],["approvals","Submit for Approval",Send],["payments","Payments & Statements",WalletCards],["help","Help",CircleHelp]] as const;
 const titles:Record<Screen,string>={dashboard:"Dashboard",approvals:"Approvals",employees:"Employees",plans:"Compensation Plans",payments:"Payments",reconciliation:"Reconciliation",hubspot:"HubSpot Integration",rules:"Rules & Calculations",settings:"Settings",logs:"Activity Log",help:"Help"};
 
-type PlanComponent={name:string;rate:string;description:string;calculation:string;scope:string;earned:string;eligible:string;effective:string;accent:"blue"|"green"|"orange"|"violet"};
+type PlanComponent={name:string;rate:string;description:string;calculation:string;scope:string;earned:string;eligible:string;effective:string;accent:"blue"|"green"|"violet"|"orange";reviewStatus?:string;holdReason?:string;isHeld?:boolean};
 const wesComponents:PlanComponent[]=[
   {name:"Retention commission",rate:"2%",description:"Rewards retained customer revenue assigned to Wes.",calculation:"HubSpot Deal Amount × 2%",scope:"Renewal deals in GovAffairs or MEams where Wes is the deal owner. Owner/CEM mismatches require review.",earned:"Closed Won Finance, Invoiced, or Paid",eligible:"Closed Won Paid with an Invoice Paid Date",effective:"Dec 12, 2025",accent:"green"},
   {name:"Expansion commission",rate:"10%",description:"Rewards additional revenue sold to an existing customer.",calculation:"HubSpot Deal Amount × 10%",scope:"Expansion deals selected by this plan component in GovAffairs or MEams.",earned:"Closed Won Finance, Invoiced, or Paid",eligible:"Closed Won Paid with an Invoice Paid Date",effective:"Dec 12, 2025",accent:"blue"},
@@ -314,7 +314,85 @@ function AnalyticsGrid(){return <div className="analytics-grid"><article classNa
 
 function EmployeeAtAGlance(){return <><section className="employee-hero"><div><small>YOUR 2026 EARNINGS</small><strong>$2,822.30</strong><span>23 retention earnings</span><div className="employee-money-row"><p><b>$1,799.40</b><small>eligible now</small></p><p><b>$1,022.90</b><small>waiting on payment</small></p></div></div><div className="employee-pay-ring"><span><b>65%</b><small>payable</small></span></div></section><div className="employee-goals"><article className="goal-card"><div className="goal-head"><span><small>YEARLY BOOK TARGET</small><b>$408,992 <em>of $700,000</em></b></span><strong>58.4%</strong></div><div className="goal-track"><i style={{left:"55.2%"}}/><u style={{width:"58.4%"}}/><span style={{left:"58.4%"}}>You are here</span></div><div className="goal-scale"><span>$386,674 start</span><span>$291,008 to goal</span><span>$700K</span></div><div className="next-reward"><TrendingUp/><span><small>NEXT YEAR-END REWARD</small><b>$5,000 bonus at $700,000</b></span></div></article><article className="goal-card component-performance"><div className="goal-head"><span><small>EARNINGS BY COMPONENT</small><b>Retention leads YTD</b></span><strong>$2.8K</strong></div><div className="component-bar"><span>Retention commission <b>$2,822</b></span><i><u style={{width:"100%"}}/></i></div><div className="component-bar muted"><span>Expansion commission <b>Not calculated</b></span><i><u style={{width:"0%"}}/></i></div><div className="component-bar muted"><span>New sales commission <b>Not calculated</b></span><i><u style={{width:"0%"}}/></i></div></article><article className="goal-card tier-card"><div className="goal-head"><span><small>NEW SALES RATE TIERS</small><b>Your rate depends on contract term</b></span></div><div className="tier-steps"><div><small>1 year</small><b>8%</b></div><div><small>2–3 years</small><b>10%</b></div><div><small>4+ years</small><b>12%</b><em>TOP TIER</em></div></div><p>Each qualifying deal shows its achieved tier and the next available rate.</p></article></div></>}
 
-function ComponentCard({item,compact=false}:{item:PlanComponent;compact?:boolean}){return <article className={`plan-component-card ${item.accent} ${compact?"compact":""}`}><div className="component-top"><span>{item.name}</span><strong>{item.rate}</strong></div><p>{item.description}</p><div className="formula"><small>HOW IT IS CALCULATED</small><b>{item.calculation}</b></div>{!compact&&<div className="component-rules"><div><small>WHAT COUNTS</small><span>{item.scope}</span></div><div><small>WHEN IT IS EARNED</small><span>{item.earned}</span></div><div><small>WHEN IT IS PAYABLE</small><span>{item.eligible}</span></div><div><small>EFFECTIVE</small><span>{item.effective}</span></div></div>}</article>}
+function ComponentCard({
+  item,
+  compact=false
+}:{
+  item:PlanComponent;
+  compact?:boolean
+}){
+  return (
+    <article className={`plan-component-card ${item.accent} ${compact?"compact":""}`}>
+      <div className="component-top">
+        <span>{item.name}</span>
+
+        <div style={{display:"flex",alignItems:"center",gap:"8px"}}>
+          {item.isHeld&&(
+            <small style={{
+              fontSize:"10px",
+              fontWeight:800,
+              letterSpacing:".08em",
+              textTransform:"uppercase",
+              padding:"5px 8px",
+              borderRadius:"999px",
+              background:"#fff4dd",
+              color:"#b56700",
+              border:"1px solid #f0c36b"
+            }}>
+              Under review
+            </small>
+          )}
+
+          <strong>{item.rate}</strong>
+        </div>
+      </div>
+
+      <p>{item.description}</p>
+
+      {item.isHeld&&(
+        <div className="warning" style={{marginBottom:"14px"}}>
+          <AlertTriangle/>
+          <div>
+            <b>Under management review</b>
+            <small>
+              {item.holdReason||
+                "This component is calculated for visibility and discussion only. It does not count as earned, eligible, approved, or payable until management releases the hold."}
+            </small>
+          </div>
+        </div>
+      )}
+
+      <div className="formula">
+        <small>HOW IT IS CALCULATED</small>
+        <b>{item.calculation}</b>
+      </div>
+
+      {!compact&&(
+        <div className="component-rules">
+          <div>
+            <small>WHAT COUNTS</small>
+            <span>{item.scope}</span>
+          </div>
+
+          <div>
+            <small>WHEN IT IS EARNED</small>
+            <span>{item.earned}</span>
+          </div>
+
+          <div>
+            <small>WHEN IT IS PAYABLE</small>
+            <span>{item.eligible}</span>
+          </div>
+
+          <div>
+            <small>EFFECTIVE</small>
+            <span>{item.effective}</span>
+          </div>
+        </div>
+      )}
+    </article>
+  );
+}
 function PlanComponentSections({items,compact=false}:{items:PlanComponent[];compact?:boolean}){return <div className={`plan-component-grid ${compact?"compact-grid":""}`}>{items.map(item=><ComponentCard key={item.name} item={item} compact={compact}/>)}</div>}
 function DashboardPlanOverview({go}:{go:(x:Screen)=>void}){const[person,setPerson]=useState<"Wes"|"Sharon">("Wes");const items=person==="Wes"?wesComponents:sharonComponents;return <Panel title="Plan components" copy="Each component explains what counts, how it is calculated, and when it becomes payable." action={<div className="mini-switch"><button className={person==="Wes"?"active":""} onClick={()=>setPerson("Wes")}>Wes</button><button className={person==="Sharon"?"active":""} onClick={()=>setPerson("Sharon")}>Sharon</button></div>}><PlanComponentSections items={items} compact/><button className="text-link" onClick={()=>go("plans")}>Open full plan details <ChevronRight/></button></Panel>}
 
@@ -422,9 +500,12 @@ function Employee({
             ?"On hold pending management decision"
             :rules.eligibility_condition||"Per configured eligibility rule",
           effective,
-          accent:held
-            ?"orange"
-            :(["blue","green","violet"][index%3] as "blue"|"green"|"violet")
+         accent:held
+  ?"orange"
+  :(["blue","green","violet"][index%3] as "blue"|"green"|"violet"),
+isHeld:held,
+reviewStatus:rules.review_status||"",
+holdReason:rules.hold_reason||""
         };
       });
 
@@ -573,9 +654,13 @@ function Plans({employee,toast}:{employee:boolean;toast:(x:string)=>void}){
             result?.plan?.effective_start_date||
             "—",
           accent:held
-            ?"orange"
-            :(["blue","green","violet"][index%3] as "blue"|"green"|"violet")
-        };
+  ?"orange"
+  :(["blue","green","violet"][index%3] as "blue"|"green"|"violet"),
+isHeld:held,
+reviewStatus:rules.review_status||"",
+holdReason:rules.hold_reason||""
+};
+      
       });
 
       setMyItems(items);
@@ -620,18 +705,7 @@ function Plans({employee,toast}:{employee:boolean;toast:(x:string)=>void}){
         :!planError&&<p>Loading assigned compensation components...</p>
       }
 
-      {myItems.some(item=>item.name.includes("Under Review"))&&
-        <div className="plan-note">
-          <AlertTriangle/>
-          <span>
-            <b>Component under management review</b>
-            <small>
-              Amounts for held components may be calculated for discussion,
-              but they do not count as earned or payable until released.
-            </small>
-          </span>
-        </div>
-      }
+      
     </>;
   }
 
