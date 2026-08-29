@@ -294,7 +294,7 @@ function SupabaseStatus() {
   );
 }
 
-function render(s:Screen,m:Mode,p:string,setP:(x:string)=>void,go:(x:Screen)=>void,toast:(x:string)=>void,hubspot:HubSpotSummary,refreshHubSpot:()=>void,syncing:boolean,hubspotError:string,access:AccessSummary|null){if(s==="dashboard")return m==="management"?<Manager period={p} setPeriod={setP} go={go} toast={toast} hubspot={hubspot}/>:<Employee period={p} setPeriod={setP} go={go}/>;if(s==="approvals")return <Approvals employee={m==="employee"} go={go} toast={toast}/>;if(s==="employees")return m==="employee"?<Earnings go={go} toast={toast}/>:<Employees go={go}/>;if(s==="plans")return <Plans employee={m==="employee"} toast={toast}/>;if(s==="payments")return <Payments employee={m==="employee"} go={go} toast={toast}/>;if(s==="reconciliation")return <Reconcile toast={toast}/>;if(s==="hubspot")return <HubSpot toast={toast} data={hubspot} refresh={refreshHubSpot} syncing={syncing} error={hubspotError}/>;if(s==="rules")return <Rules/>;if(s==="settings")return <SettingsPage toast={toast} access={access}/>;if(s==="logs")return <Logs/>;return <Help/>}
+function render(s:Screen,m:Mode,p:string,setP:(x:string)=>void,go:(x:Screen)=>void,toast:(x:string)=>void,hubspot:HubSpotSummary,refreshHubSpot:()=>void,syncing:boolean,hubspotError:string,access:AccessSummary|null){if(s==="dashboard")return m==="management"?<Manager period={p} setPeriod={setP} go={go} toast={toast} hubspot={hubspot}/>:<<Employee period={p} setPeriod={setP} go={go} access={access}/>;if(s==="approvals")return <Approvals employee={m==="employee"} go={go} toast={toast}/>;if(s==="employees")return m==="employee"?<Earnings go={go} toast={toast}/>:<Employees go={go}/>;if(s==="plans")return <Plans employee={m==="employee"} toast={toast}/>;if(s==="payments")return <Payments employee={m==="employee"} go={go} toast={toast}/>;if(s==="reconciliation")return <Reconcile toast={toast}/>;if(s==="hubspot")return <HubSpot toast={toast} data={hubspot} refresh={refreshHubSpot} syncing={syncing} error={hubspotError}/>;if(s==="rules")return <Rules/>;if(s==="settings")return <SettingsPage toast={toast} access={access}/>;if(s==="logs")return <Logs/>;return <Help/>}
 function Head({title,copy,children}:{title:string;copy:string;children?:React.ReactNode}){return <div className="title"><div><h1>{title}</h1><p>{copy}</p></div>{children}</div>}
 function Period({value,set}:{value:string;set:(x:string)=>void}){return <div className="seg">{["This month","Last month","YTD"].map(x=><button key={x} className={value===x?"selected":""} onClick={()=>set(x)}>{x}</button>)}</div>}
 function Stat({label,value="—",note,blue=false}:{label:string;value?:string;note:string;blue?:boolean}){return <article className={`stat ${blue?"blue":""}`}><small>{label}</small><b>{value}</b><span>{note}</span></article>}
@@ -319,7 +319,88 @@ function PlanComponentSections({items,compact=false}:{items:PlanComponent[];comp
 function DashboardPlanOverview({go}:{go:(x:Screen)=>void}){const[person,setPerson]=useState<"Wes"|"Sharon">("Wes");const items=person==="Wes"?wesComponents:sharonComponents;return <Panel title="Plan components" copy="Each component explains what counts, how it is calculated, and when it becomes payable." action={<div className="mini-switch"><button className={person==="Wes"?"active":""} onClick={()=>setPerson("Wes")}>Wes</button><button className={person==="Sharon"?"active":""} onClick={()=>setPerson("Sharon")}>Sharon</button></div>}><PlanComponentSections items={items} compact/><button className="text-link" onClick={()=>go("plans")}>Open full plan details <ChevronRight/></button></Panel>}
 
 function Manager({period,setPeriod,go,toast,hubspot}:{period:string;setPeriod:(x:string)=>void;go:(x:Screen)=>void;toast:(x:string)=>void;hubspot:HubSpotSummary}){const connected=hubspot.deals>0;return <><Head title="Compensation intelligence" copy="Earnings, payment readiness, plan performance, and data quality at a glance."><div className="head-actions"><Period value={period} set={setPeriod}/><Exports toast={toast}/></div></Head><ExecutiveSnapshot hubspot={hubspot}/><Filters toast={toast}/><section className="card priority"><div><span><ShieldCheck/></span><div><small>YOUR APPROVAL QUEUE</small><h2>No employee submissions yet</h2><p>23 calculated earnings are ready for employee verification; 15 currently meet the payment condition.</p></div></div><button className="primary" onClick={()=>go("approvals")}>Open approvals <ChevronRight/></button></section><AnalyticsGrid/><div className="two"><Panel title="Employee earnings" copy={`Earned versus eligible · ${period}`} action={<button onClick={()=>go("employees")}>View employees</button>}><div className="employee-row"><span className="initials">WM</span><div><b>Wes Morris</b><small>Customer Experience Manager</small></div><div><small>Earned</small><b>$2,822.30</b></div><div><small>Eligible</small><b>$1,799.40</b></div><em>23 earnings</em></div><div className="employee-row"><span className="initials">SW</span><div><b>Sharon Wells</b><small>Revenue operations overlay</small></div><div><small>Earned</small><b>—</b></div><div><small>Eligible</small><b>—</b></div><em>Plan designed</em></div></Panel><Panel title="Flags & warnings" copy="Items that may affect accuracy" action={<button onClick={()=>go("reconciliation")}>Review all</button>}>{connected?<Warn title={`${hubspot.unreviewedChanges} HubSpot change${hubspot.unreviewedChanges===1?"":"s"} need review`} text={`${hubspot.deals.toLocaleString()} deals and ${hubspot.companies.toLocaleString()} companies are synchronized.`}/>:<Warn title="Live refresh requires sign-in" text="Showing the latest validated compensation snapshot."/>}<Warn title="Historical payments not imported" text="Prior paid and unpaid earnings could be duplicated."/><Warn title="Renewal payment hold needs status" text="Sharon’s historical renewal override is tracked separately until management releases the hold."/></Panel></div><DashboardPlanOverview go={go}/><Book/><Panel title="Book of business accounts" copy="Starting ARR, current ARR, revenue movement, ownership, renewal timing, and status"><DataTable type="book"/></Panel><section className="card ai"><Bot/><div><h2>Ask your compensation data</h2><p>Once calculations are active, ask “Which renewals don’t match last year?” or “Why isn’t this earning eligible?”</p></div><button onClick={()=>go("hubspot")}>Review source data</button></section></>}
-function Employee({period,setPeriod,go}:{period:string;setPeriod:(x:string)=>void;go:(x:Screen)=>void}){return <><Head title="My compensation" copy="Wes Morris · Customer Experience Manager · 2026 plan year"><Period value={period} set={setPeriod}/></Head><EmployeeAtAGlance/><section className="card employee-action"><div><ShieldCheck/><span><small>READY FOR YOUR REVIEW</small><b>23 earnings calculated</b><p>Verify the source deals before submitting them for management approval.</p></span></div><button className="primary" onClick={()=>go("approvals")}>Review earnings <ChevronRight/></button></section><div className="two"><Panel title="My attention" copy="Actions and data checks"><Warn title="15 earnings are eligible for payment" text="They reached the paid stage and have an invoice paid date."/><Warn title="8 earnings are still waiting" text="They remain earned and will become eligible when the payment condition is met."/></Panel><Panel title="Plan progress summary" copy="The measures that affect your variable compensation"><div className="mini-metrics"><span><small>QUALIFYING RENEWAL ARR</small><b>$141,115</b></span><span><small>BOOK GROWTH</small><b>+$22,318</b></span><span><small>YEAR-END TARGET</small><b>$700,000</b></span></div></Panel></div><Panel title="How my plan works" copy="Each plan component is calculated independently. Open My Plan for the complete rules."><PlanComponentSections items={wesComponents} compact/><button className="text-link" onClick={()=>go("plans")}>See full component rules <ChevronRight/></button></Panel><Panel title="Deals contributing to earnings" copy="Expand a row to see source fields, achieved tier, calculation, eligibility, and comments"><DataTable type="approvals"/></Panel></>}
+function Employee({
+  period,
+  setPeriod,
+  go,
+  access
+}:{
+  period:string;
+  setPeriod:(x:string)=>void;
+  go:(x:Screen)=>void;
+  access:AccessSummary|null;
+}){
+  const isSharon=access?.email?.toLowerCase()==="sharonwells@engagifii.com";
+  const employeeName=access?.full_name||access?.email||"Employee";
+  const planItems=isSharon?sharonComponents:wesComponents;
+
+  return <>
+    <Head
+      title="My compensation"
+      copy={`${employeeName} · 2026 plan year`}
+    >
+      <Period value={period} set={setPeriod}/>
+    </Head>
+
+    {isSharon ? (
+      <>
+        <div className="stats">
+          <Stat label="Earned" note="Calculation pending"/>
+          <Stat label="Eligible" note="Calculation pending"/>
+          <Stat label="Approved" note="No submissions"/>
+          <Stat label="Paid" note="History not imported"/>
+        </div>
+
+        <Panel
+          title="My compensation plan"
+          copy="Your assigned compensation components and effective rules."
+        >
+          <PlanComponentSections items={planItems} compact/>
+          <button className="text-link" onClick={()=>go("plans")}>
+            See full component rules <ChevronRight/>
+          </button>
+        </Panel>
+
+        <Panel
+          title="My earnings"
+          copy="Your calculated earnings will appear here once live calculations are activated."
+        >
+          <Empty
+            icon={<BarChart3/>}
+            title="No earnings calculated yet"
+            text="Your employee profile is connected. Earnings still need to be calculated from the configured compensation rules."
+            action="View my plan"
+            onClick={()=>go("plans")}
+          />
+        </Panel>
+      </>
+    ) : (
+      <>
+        <EmployeeAtAGlance/>
+        <section className="card employee-action">
+          <div>
+            <ShieldCheck/>
+            <span>
+              <small>READY FOR YOUR REVIEW</small>
+              <b>23 earnings calculated</b>
+              <p>Verify the source deals before submitting them for management approval.</p>
+            </span>
+          </div>
+          <button className="primary" onClick={()=>go("approvals")}>
+            Review earnings <ChevronRight/>
+          </button>
+        </section>
+
+        <Panel
+          title="How my plan works"
+          copy="Each plan component is calculated independently."
+        >
+          <PlanComponentSections items={planItems} compact/>
+        </Panel>
+      </>
+    )}
+  </>
+}
 function Book(){return <Panel title="Company performance" copy="Book of business, revenue type, ownership, and renewal status"><div className="book"><div><small>2026 starting book</small><b>$386,674.25</b><span>64 companies</span></div><div><small>Known expansion</small><b>$22,318.00</b><span>Maryland Hospital + Pepco</span></div><div><small>Year-end threshold</small><b>$700,000.00</b><span>Wes’s $5,000 bonus</span></div><div><small>Renewal validation</small><b>Pending sync</b><span>Flag mismatches</span></div></div></Panel>}
 function Employees({go}:{go:(x:Screen)=>void}){return <><Head title="Employees" copy="People, roles, assigned plan versions, and calculation readiness."><button className="primary" onClick={()=>go("plans")}>Add employee</button></Head><Panel title="Configured employees" copy="Multiple roles, effective-dated plan versions, and component-level rules are supported"><div className="table-head"><span>Employee</span><span>Roles</span><span>Plan</span><span>Status</span></div><div className="table-row"><div><span className="initials">WM</span><p><b>Wes Morris</b><small>wesmorris@engagifii.com</small></p></div><span>Customer Experience Manager</span><span>4 components · 2026</span><em>Configured</em></div><div className="table-row"><div><span className="initials">SW</span><p><b>Sharon Wells</b><small>Revenue operations overlay</small></p></div><span>Company-wide revenue override</span><span>7 effective-dated components</span><em>Plan designed</em></div><Empty icon={<Users/>} title="Two employee plans configured" text="Every component retains its own source, owner, stage, earning, eligibility, and approval rules." action="Review plans" onClick={()=>go("plans")}/></Panel><Book/></>}
 function MissingDealClaim({toast}:{toast:(x:string)=>void}){const[dealId,setDealId]=useState(""),[explanation,setExplanation]=useState(""),[sending,setSending]=useState(false),[message,setMessage]=useState("");const submit=async()=>{if(!supabase)return toast("Database connection is unavailable");if(!/^\d+$/.test(dealId.trim()))return setMessage("Enter the numeric HubSpot deal ID.");if(explanation.trim().length<10)return setMessage("Please add a short explanation of why the deal should count.");setSending(true);setMessage("");const{data,error}=await supabase.rpc("submit_missing_earning_claim",{submitted_hubspot_deal_id:dealId.trim(),submitted_explanation:explanation.trim(),submitted_plan_component_id:null});if(error)setMessage(error.message);else{setDealId("");setExplanation("");setMessage(`Claim submitted for deal ${data?.hubspot_deal_id||dealId}. Your assigned approver will review it.`);toast("Missing earning claim submitted")};setSending(false)};return <Panel title="Missing a deal?" copy="Submit a HubSpot deal you believe should count. This creates a review request—it does not add an earning automatically."><div className="claim-form"><label><span>HubSpot deal ID</span><input inputMode="numeric" value={dealId} onChange={e=>setDealId(e.target.value)} placeholder="Example: 31248163753"/></label><label><span>Why should this deal be earned?</span><textarea value={explanation} onChange={e=>setExplanation(e.target.value)} placeholder="Explain the deal type, your role, and why it matches your plan." rows={4}/></label><button className="primary" onClick={submit} disabled={sending}><MessageSquare/>{sending?"Submitting…":"Submit for review"}</button>{message&&<div className="claim-message">{message}</div>}<small>Your management approver can approve, deny, or return the request for more information. Every decision is retained in the audit history.</small></div></Panel>}
