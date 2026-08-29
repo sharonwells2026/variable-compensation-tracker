@@ -487,7 +487,228 @@ function Book(){return <Panel title="Company performance" copy="Book of business
 function Employees({go}:{go:(x:Screen)=>void}){return <><Head title="Employees" copy="People, roles, assigned plan versions, and calculation readiness."><button className="primary" onClick={()=>go("plans")}>Add employee</button></Head><Panel title="Configured employees" copy="Multiple roles, effective-dated plan versions, and component-level rules are supported"><div className="table-head"><span>Employee</span><span>Roles</span><span>Plan</span><span>Status</span></div><div className="table-row"><div><span className="initials">WM</span><p><b>Wes Morris</b><small>wesmorris@engagifii.com</small></p></div><span>Customer Experience Manager</span><span>4 components · 2026</span><em>Configured</em></div><div className="table-row"><div><span className="initials">SW</span><p><b>Sharon Wells</b><small>Revenue operations overlay</small></p></div><span>Company-wide revenue override</span><span>7 effective-dated components</span><em>Plan designed</em></div><Empty icon={<Users/>} title="Two employee plans configured" text="Every component retains its own source, owner, stage, earning, eligibility, and approval rules." action="Review plans" onClick={()=>go("plans")}/></Panel><Book/></>}
 function MissingDealClaim({toast}:{toast:(x:string)=>void}){const[dealId,setDealId]=useState(""),[explanation,setExplanation]=useState(""),[sending,setSending]=useState(false),[message,setMessage]=useState("");const submit=async()=>{if(!supabase)return toast("Database connection is unavailable");if(!/^\d+$/.test(dealId.trim()))return setMessage("Enter the numeric HubSpot deal ID.");if(explanation.trim().length<10)return setMessage("Please add a short explanation of why the deal should count.");setSending(true);setMessage("");const{data,error}=await supabase.rpc("submit_missing_earning_claim",{submitted_hubspot_deal_id:dealId.trim(),submitted_explanation:explanation.trim(),submitted_plan_component_id:null});if(error)setMessage(error.message);else{setDealId("");setExplanation("");setMessage(`Claim submitted for deal ${data?.hubspot_deal_id||dealId}. Your assigned approver will review it.`);toast("Missing earning claim submitted")};setSending(false)};return <Panel title="Missing a deal?" copy="Submit a HubSpot deal you believe should count. This creates a review request—it does not add an earning automatically."><div className="claim-form"><label><span>HubSpot deal ID</span><input inputMode="numeric" value={dealId} onChange={e=>setDealId(e.target.value)} placeholder="Example: 31248163753"/></label><label><span>Why should this deal be earned?</span><textarea value={explanation} onChange={e=>setExplanation(e.target.value)} placeholder="Explain the deal type, your role, and why it matches your plan." rows={4}/></label><button className="primary" onClick={submit} disabled={sending}><MessageSquare/>{sending?"Submitting…":"Submit for review"}</button>{message&&<div className="claim-message">{message}</div>}<small>Your management approver can approve, deny, or return the request for more information. Every decision is retained in the audit history.</small></div></Panel>}
 function Earnings({go,toast}:{go:(x:Screen)=>void;toast:(x:string)=>void}){return <><Head title="My earnings" copy="Deal-level earnings, eligibility, approval, and payment status by plan component."/><div className="stats"><Stat label="Earned" note="Not calculated"/><Stat label="Eligible" note="Not calculated"/><Stat label="Approved" note="No submissions"/><Stat label="Paid" note="History not imported"/></div><DashboardPlanOverview go={go}/><Panel title="Earning details by component" copy="Each section will show its HubSpot source, formula, effective rule, status, and explanation"><Empty icon={<BarChart3/>} title="No earnings calculated" text="The component structure is ready; calculation activation and historical reconciliation come next." action="View my plan" onClick={()=>go("plans")}/></Panel><MissingDealClaim toast={toast}/></>}
-function Plans({employee,toast}:{employee:boolean;toast:(x:string)=>void}){const[selected,setSelected]=useState<"Wes"|"Sharon">("Wes");const items=selected==="Wes"?wesComponents:sharonComponents;return <><Head title={employee?"My compensation plan":"Compensation plans"} copy={employee?"Every component explains what counts, the formula, and when it becomes payable.":"Configure and version each component independently without changing historical calculations."}>{!employee&&<div className="plan-actions"><button onClick={()=>toast("Plan component editor opened")}><Pencil/> Edit components</button><button onClick={()=>toast("Plan assignments opened")}><Users/> Applied to</button></div>}</Head>{!employee&&<div className="plan-person-tabs"><button className={selected==="Wes"?"active":""} onClick={()=>setSelected("Wes")}><span>WM</span><b>Wes Morris</b><small>4 components</small></button><button className={selected==="Sharon"?"active":""} onClick={()=>setSelected("Sharon")}><span>SW</span><b>Sharon Wells</b><small>7 components</small></button></div>}<section className="plan-intro"><div><small>{selected.toUpperCase()}’S PLAN</small><h2>{selected==="Wes"?"Customer Experience Manager Incentive Plan":"Revenue Operations Override & Bonus Plan"}</h2><p>{selected==="Wes"?"Effective from December 12, 2025. Deal-based earnings use component-selected pipelines, types, stages, amounts, and credit rules.":"Historical rules effective from April 1, 2023 with rate changes preserved by date. Base salary is excluded from variable compensation."}</p></div><em>{selected==="Wes"?"Draft · 2026":"Effective-dated · historical"}</em></section><PlanComponentSections items={items}/>{selected==="Sharon"&&<div className="plan-note"><AlertTriangle/><span><b>Renewal payment hold needs confirmation</b><small>Renewal earnings beginning August 1, 2024 can be calculated and shown as eligible while payment remains held until management releases the hold.</small></span></div>}</>}
+function Plans({employee,toast}:{employee:boolean;toast:(x:string)=>void}){
+  const[selected,setSelected]=useState<"Wes"|"Sharon">("Wes");
+  const[myPlan,setMyPlan]=useState<any>(null);
+  const[myItems,setMyItems]=useState<PlanComponent[]>([]);
+  const[planError,setPlanError]=useState("");
+
+  useEffect(()=>{
+    if(!employee||!supabase)return;
+
+    const loadMyPlan=async()=>{
+      const{data,error}=await supabase.rpc("get_my_compensation_plan");
+
+      if(error){
+        setPlanError(error.message);
+        return;
+      }
+
+      const result=data as any;
+      setMyPlan(result?.plan||null);
+
+      const items:PlanComponent[]=(result?.components||[]).map((c:any,index:number)=>{
+        const rules=c.rule_configuration||{};
+        const held=rules.earning_treatment==="calculate_only_hold";
+
+        let rate="—";
+
+        if(Array.isArray(rules.rate_history)){
+          rate=rules.rate_history
+            .map((r:any)=>`${Math.round(Number(r.rate||0)*100)}%`)
+            .join(" → ");
+        }else if(rules.rate!=null){
+          rate=`${Math.round(Number(rules.rate)*100)}%`;
+        }else if(rules.amount_per_completed_qdc!=null){
+          rate=`$${Number(rules.amount_per_completed_qdc).toLocaleString()} each`;
+        }else if(Array.isArray(rules.milestones)){
+          const bonuses=rules.milestones.map((m:any)=>Number(m.bonus||0));
+          rate=`$${Math.min(...bonuses)/1000}K–$${Math.max(...bonuses)/1000}K`;
+        }
+
+        let calculation=c.measurement_label||c.measurement_source||"Configured rule";
+
+        if(rules.rate!=null){
+          calculation=`${c.measurement_label||c.measurement_source||"Qualifying amount"} × ${Math.round(Number(rules.rate)*100)}%`;
+        }
+
+        if(Array.isArray(rules.rate_history)){
+          calculation=rules.rate_history.map((r:any)=>{
+            const pct=Math.round(Number(r.rate||0)*100);
+            return `${pct}% from ${r.effective_start_date||"—"} through ${r.effective_end_date||"present"}`;
+          }).join("; ");
+        }
+
+        if(rules.amount_per_completed_qdc!=null){
+          calculation=`Completed qualifying QDCs × $${Number(rules.amount_per_completed_qdc).toLocaleString()}`;
+        }
+
+        if(Array.isArray(rules.milestones)){
+          calculation=rules.milestones
+            .map((m:any)=>`$${Number(m.threshold).toLocaleString()} → $${Number(m.bonus).toLocaleString()}`)
+            .join("; ");
+        }
+
+        const scope=[
+          rules.pipeline,
+          rules.deal_type,
+          rules.credit_scope==="company_wide"?"Company-wide":null
+        ].filter(Boolean).join(" · ")||"See configured component rules";
+
+        return{
+          name:c.name,
+          rate,
+          description:c.description||"",
+          calculation,
+          scope,
+          earned:held
+            ?"Calculated for visibility only — not currently treated as earned"
+            :rules.earned_condition||"Per configured earning rule",
+          eligible:held
+            ?"On hold pending management decision"
+            :rules.eligibility_condition||"Per configured eligibility rule",
+          effective:
+            rules.effective_start_date||
+            rules.modeled_effective_start_date||
+            result?.plan?.effective_start_date||
+            "—",
+          accent:held
+            ?"orange"
+            :(["blue","green","violet"][index%3] as "blue"|"green"|"violet")
+        };
+      });
+
+      setMyItems(items);
+    };
+
+    loadMyPlan();
+  },[employee]);
+
+  if(employee){
+    return <>
+      <Head
+        title="My compensation plan"
+        copy="Every component explains what counts, the formula, and when it becomes payable."
+      />
+
+      {planError&&
+        <Warn
+          title="Unable to load your compensation plan"
+          text={planError}
+        />
+      }
+
+      <section className="plan-intro">
+        <div>
+          <small>MY PLAN</small>
+          <h2>{myPlan?.name||"Loading compensation plan..."}</h2>
+          <p>
+            {myPlan
+              ?`Effective from ${myPlan.effective_start_date||myPlan.assignment_effective_start_date||"—"}. Plan components and rules are loaded from your assigned plan.`
+              :"Loading your assigned plan and components from the compensation database."}
+          </p>
+        </div>
+        <em>
+          {myPlan
+            ?`${myPlan.status||"Draft"} · Version ${myPlan.version_number||1}`
+            :"Loading"}
+        </em>
+      </section>
+
+      {myItems.length>0
+        ?<PlanComponentSections items={myItems}/>
+        :!planError&&<p>Loading assigned compensation components...</p>
+      }
+
+      {myItems.some(item=>item.name.includes("Under Review"))&&
+        <div className="plan-note">
+          <AlertTriangle/>
+          <span>
+            <b>Component under management review</b>
+            <small>
+              Amounts for held components may be calculated for discussion,
+              but they do not count as earned or payable until released.
+            </small>
+          </span>
+        </div>
+      }
+    </>;
+  }
+
+  const items=selected==="Wes"?wesComponents:sharonComponents;
+
+  return <>
+    <Head
+      title="Compensation plans"
+      copy="Configure and version each component independently without changing historical calculations."
+    >
+      <div className="plan-actions">
+        <button onClick={()=>toast("Plan component editor opened")}>
+          <Pencil/> Edit components
+        </button>
+        <button onClick={()=>toast("Plan assignments opened")}>
+          <Users/> Applied to
+        </button>
+      </div>
+    </Head>
+
+    <div className="plan-person-tabs">
+      <button
+        className={selected==="Wes"?"active":""}
+        onClick={()=>setSelected("Wes")}
+      >
+        <span>WM</span>
+        <b>Wes Morris</b>
+        <small>4 components</small>
+      </button>
+
+      <button
+        className={selected==="Sharon"?"active":""}
+        onClick={()=>setSelected("Sharon")}
+      >
+        <span>SW</span>
+        <b>Sharon Wells</b>
+        <small>7 components</small>
+      </button>
+    </div>
+
+    <section className="plan-intro">
+      <div>
+        <small>{selected.toUpperCase()}’S PLAN</small>
+        <h2>
+          {selected==="Wes"
+            ?"Customer Experience Manager Incentive Plan"
+            :"Revenue Operations Override & Bonus Plan"}
+        </h2>
+        <p>
+          {selected==="Wes"
+            ?"Effective from December 12, 2025. Deal-based earnings use component-selected pipelines, types, stages, amounts, and credit rules."
+            :"Historical rules effective from April 1, 2023 with rate changes preserved by date. Base salary is excluded from variable compensation."}
+        </p>
+      </div>
+      <em>
+        {selected==="Wes"
+          ?"Draft · 2026"
+          :"Effective-dated · historical"}
+      </em>
+    </section>
+
+    <PlanComponentSections items={items}/>
+
+    {selected==="Sharon"&&
+      <div className="plan-note">
+        <AlertTriangle/>
+        <span>
+          <b>Renewal payment hold needs confirmation</b>
+          <small>
+            Renewal earnings are modeled separately until management confirms
+            whether the component applies.
+          </small>
+        </span>
+      </div>
+    }
+  </>;
+}
 function Approvals({employee,go,toast}:{employee:boolean;go:(x:Screen)=>void;toast:(x:string)=>void}){const[comment,setComment]=useState("");return <><Head title={employee?"Submit for approval":"Approvals"} copy={employee?"Verify line items by plan component, add comments, and submit selected earnings.":"Approve by employee and plan component, return with comments, and track every approval step."}><Exports toast={toast}/></Head><Filters toast={toast} employee={employee}/><DashboardPlanOverview go={go}/><div className="tabs"><button className="active">{employee?"Ready to submit":"My queue"} <b>0</b></button><button>{employee?"Submitted":"Waiting on others"} <b>0</b></button><button>Approved</button><button>Returned</button><button>All activity</button></div><Panel title="Approval line items by component" copy="Every row will include the component description, source facts, formula, effective rule, and comments"><div className="bulk"><label><input type="checkbox"/> Select all visible</label><button disabled>{employee?"Submit selected":"Approve selected"}</button><button disabled>{employee?"Remove":"Return selected"}</button></div><DataTable type="approvals"/><div className="comment-box"><MessageSquare/><textarea value={comment} onChange={e=>setComment(e.target.value)} placeholder="Add a comment to the selected line item or submission…"/><button onClick={()=>{if(comment.trim()){toast("Comment saved to the activity history");setComment("")}else toast("Enter a comment first")}}>Add comment</button></div></Panel><Panel title="Workflow" copy="Approval and payment eligibility remain independent"><div className="flow"><b>Employee verifies</b><ChevronRight/><b>Manager approves</b><ChevronRight/><b>Executive if required</b><ChevronRight/><b>Payroll pays eligible items</b></div></Panel></>}
 function Payments({employee,go,toast}:{employee:boolean;go:(x:Screen)=>void;toast:(x:string)=>void}){return <><Head title={employee?"Payments & statements":"Payments"} copy={employee?"See what was paid, when, and which plan component produced it.":"Analyze and reconcile payments by period, employee, deal, component, and status."}><Exports toast={toast}/></Head><Filters toast={toast} employee={employee}/><div className="stats"><Stat label="Approved & eligible" note="No live calculations"/><Stat label="Approved, not eligible" note="Held for payment condition"/><Stat label="Scheduled" value="0" note="No open pay run"/><Stat label="Paid" note="History not imported"/></div><DashboardPlanOverview go={go}/><Panel title="Payment detail by component" copy="Pay period, component, source, approval, eligibility, scheduled date, paid date, and payroll reference"><DataTable type="payments"/><Empty icon={<WalletCards/>} title="No payments loaded" text="Historical payments must be imported before live payroll to prevent duplicate payments." action={employee?"View my earnings":"Open reconciliation"} onClick={()=>go(employee?"employees":"reconciliation")}/></Panel></>}
 function Reconcile({toast}:{toast:(x:string)=>void}){return <><Head title="Historical reconciliation" copy="Match prior earnings to paid, still owed, or intended pay periods."><Exports toast={toast}/></Head><Filters toast={toast}/><Panel title="Import checklist" copy="Required before the first live pay run">{["Import 2025 and 2026 employee earning spreadsheets","Record paid status, dates, and pay periods","Flag approved earnings still waiting for customer payment","Reconcile QDCs, tiers, partial payments, advances, and clawbacks"].map(x=><Check key={x} text={x}/>)}</Panel></>}
