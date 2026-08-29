@@ -330,75 +330,157 @@ function Employee({
   go:(x:Screen)=>void;
   access:AccessSummary|null;
 }){
-  const isSharon=access?.email?.toLowerCase()==="sharonwells@engagifii.com";
   const employeeName=access?.full_name||access?.email||"Employee";
-  const planItems=isSharon?sharonComponents:wesComponents;
+
+  const [planName,setPlanName]=useState("Loading plan...");
+  const [planItems,setPlanItems]=useState<PlanComponent[]>([]);
+  const [planError,setPlanError]=useState("");
+
+  useEffect(()=>{
+    const loadPlan=async()=>{
+      if(!supabase||!access?.employee_id)return;
+
+      const {data,error}=await supabase.rpc("get_my_compensation_plan");
+
+      if(error){
+        setPlanError(error.message);
+        return;
+      }
+
+      const result=data as any;
+
+      setPlanName(result?.plan?.name||"No assigned compensation plan");
+
+      const items:PlanComponent[]=(result?.components||[]).map((c:any,index:number)=>{
+        const rules=c.rule_configuration||{};
+        const held=rules.earning_treatment==="calculate_only_hold";
+
+        let rate="—";
+
+        if(Array.isArray(rules.rate_history)){
+          rate=rules.rate_history
+            .map((r:any)=>`${Math.round(Number(r.rate||0)*100)}%`)
+            .join(" → ");
+        }else if(rules.rate!=null){
+          rate=`${Math.round(Number(rules.rate)*100)}%`;
+        }else if(rules.amount_per_completed_qdc!=null){
+          rate=`$${Number(rules.amount_per_completed_qdc).toLocaleString()} each`;
+        }else if(Array.isArray(rules.milestones)){
+          const bonuses=rules.milestones.map((m:any)=>Number(m.bonus||0));
+          const min=Math.min(...bonuses);
+          const max=Math.max(...bonuses);
+          rate=`$${(min/1000).toFixed(0)}K–$${(max/1000).toFixed(0)}K`;
+        }
+
+        let calculation=c.measurement_label||c.measurement_source||"Configured rule";
+
+        if(rules.rate!=null){
+          calculation=`${c.measurement_label||c.measurement_source||"Qualifying amount"} × ${Math.round(Number(rules.rate)*100)}%`;
+        }
+
+        if(Array.isArray(rules.rate_history)){
+          calculation=rules.rate_history.map((r:any)=>{
+            const pct=Math.round(Number(r.rate||0)*100);
+            const start=r.effective_start_date||"";
+            const end=r.effective_end_date||"present";
+            return `${pct}% from ${start} through ${end}`;
+          }).join("; ");
+        }
+
+        if(rules.amount_per_completed_qdc!=null){
+          calculation=`Completed qualifying QDCs × $${Number(rules.amount_per_completed_qdc).toLocaleString()}`;
+        }
+
+        if(Array.isArray(rules.milestones)){
+          calculation=rules.milestones
+            .map((m:any)=>`$${Number(m.threshold).toLocaleString()} → $${Number(m.bonus).toLocaleString()}`)
+            .join("; ");
+        }
+
+        const effective=
+          rules.effective_start_date||
+          rules.modeled_effective_start_date||
+          result?.plan?.effective_start_date||
+          "—";
+
+        const scope=[
+          rules.pipeline,
+          rules.deal_type,
+          rules.credit_scope==="company_wide"?"Company-wide":null
+        ].filter(Boolean).join(" · ")||"See configured component rules";
+
+        return {
+          name:c.name,
+          rate,
+          description:c.description||"",
+          calculation,
+          scope,
+          earned:held
+            ?"Calculated for visibility only — not currently treated as earned"
+            :rules.earned_condition||"Per configured earning rule",
+          eligible:held
+            ?"On hold pending management decision"
+            :rules.eligibility_condition||"Per configured eligibility rule",
+          effective,
+          accent:held
+            ?"orange"
+            :(["blue","green","violet"][index%3] as "blue"|"green"|"violet")
+        };
+      });
+
+      setPlanItems(items);
+    };
+
+    loadPlan();
+  },[access?.employee_id]);
 
   return <>
     <Head
       title="My compensation"
-      copy={`${employeeName} · 2026 plan year`}
+      copy={`${employeeName} · ${planName}`}
     >
       <Period value={period} set={setPeriod}/>
     </Head>
 
-    {isSharon ? (
-      <>
-        <div className="stats">
-          <Stat label="Earned" note="Calculation pending"/>
-          <Stat label="Eligible" note="Calculation pending"/>
-          <Stat label="Approved" note="No submissions"/>
-          <Stat label="Paid" note="History not imported"/>
-        </div>
+    <div className="stats">
+      <Stat label="Earned" note="Calculation pending"/>
+      <Stat label="Eligible" note="Calculation pending"/>
+      <Stat label="Approved" note="No submissions"/>
+      <Stat label="Paid" note="History not imported"/>
+    </div>
 
-        <Panel
-          title="My compensation plan"
-          copy="Your assigned compensation components and effective rules."
-        >
-          <PlanComponentSections items={planItems} compact/>
-          <button className="text-link" onClick={()=>go("plans")}>
-            See full component rules <ChevronRight/>
-          </button>
-        </Panel>
+    <Panel
+      title="My compensation plan"
+      copy="Your assigned compensation components and effective rules."
+    >
+      {planError ? (
+        <Warn
+          title="Unable to load compensation plan"
+          text={planError}
+        />
+      ) : planItems.length ? (
+        <PlanComponentSections items={planItems} compact/>
+      ) : (
+        <p>Loading assigned compensation plan...</p>
+      )}
 
-        <Panel
-          title="My earnings"
-          copy="Your calculated earnings will appear here once live calculations are activated."
-        >
-          <Empty
-            icon={<BarChart3/>}
-            title="No earnings calculated yet"
-            text="Your employee profile is connected. Earnings still need to be calculated from the configured compensation rules."
-            action="View my plan"
-            onClick={()=>go("plans")}
-          />
-        </Panel>
-      </>
-    ) : (
-      <>
-        <EmployeeAtAGlance/>
-        <section className="card employee-action">
-          <div>
-            <ShieldCheck/>
-            <span>
-              <small>READY FOR YOUR REVIEW</small>
-              <b>23 earnings calculated</b>
-              <p>Verify the source deals before submitting them for management approval.</p>
-            </span>
-          </div>
-          <button className="primary" onClick={()=>go("approvals")}>
-            Review earnings <ChevronRight/>
-          </button>
-        </section>
+      <button className="text-link" onClick={()=>go("plans")}>
+        See full component rules <ChevronRight/>
+      </button>
+    </Panel>
 
-        <Panel
-          title="How my plan works"
-          copy="Each plan component is calculated independently."
-        >
-          <PlanComponentSections items={planItems} compact/>
-        </Panel>
-      </>
-    )}
+    <Panel
+      title="My earnings"
+      copy="Your calculated earnings will appear here once live calculations are activated."
+    >
+      <Empty
+        icon={<BarChart3/>}
+        title="No earnings calculated yet"
+        text="Your employee profile and compensation plan are connected. Earnings still need to be calculated from the configured compensation rules."
+        action="View my plan"
+        onClick={()=>go("plans")}
+      />
+    </Panel>
   </>
 }
 function Book(){return <Panel title="Company performance" copy="Book of business, revenue type, ownership, and renewal status"><div className="book"><div><small>2026 starting book</small><b>$386,674.25</b><span>64 companies</span></div><div><small>Known expansion</small><b>$22,318.00</b><span>Maryland Hospital + Pepco</span></div><div><small>Year-end threshold</small><b>$700,000.00</b><span>Wes’s $5,000 bonus</span></div><div><small>Renewal validation</small><b>Pending sync</b><span>Flag mismatches</span></div></div></Panel>}
