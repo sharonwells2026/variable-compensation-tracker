@@ -60,7 +60,227 @@ export default function Home(){
   return <main className="shell"><aside><button className="brand" onClick={()=>go("dashboard")}><img src="/engagifii-logo.png" alt="Engagifii"/><span><small>WORKSPACE</small><b>COMPENSATION</b></span></button><nav><p>{mode==="management"?"MANAGE":"MY COMPENSATION"}</p>{nav.map(([id,label,Icon])=><button key={id} className={screen===id?"active":""} onClick={()=>go(id)}><Icon/>{label}</button>)}{mode==="management"&&adminNav.length>0&&<><p>ADMIN</p>{adminNav.map(([id,label,Icon])=><button key={id} className={screen===id?"active":""} onClick={()=>go(id)}><Icon/>{label}</button>)}</>}</nav></aside>{mobileMenu&&<div className="mobile-menu-backdrop" onClick={()=>setMobileMenu(false)}><section className="mobile-menu" onClick={e=>e.stopPropagation()}><div className="mobile-menu-head"><img src="/engagifii-logo.png" alt="Engagifii"/><button onClick={()=>setMobileMenu(false)} aria-label="Close navigation"><X/></button></div><small>{mode==="management"?"MANAGEMENT WORKSPACE":"MY COMPENSATION"}</small>{hasManagementAccess&&hasEmployeeAccess&&<div className="mobile-mode workspace-mobile"><button className={workspace==="self"?"active":""} onClick={()=>chooseWorkspace("self")}>My</button><button className={workspace==="team"?"active":""} onClick={()=>chooseWorkspace("team")}>Team</button><button className={workspace==="administration"?"active":""} onClick={()=>chooseWorkspace("administration")}>Admin</button></div>}<nav>{allMobileNav.map(([id,label,Icon])=><button key={id} className={screen===id?"active":""} onClick={()=>go(id)}><Icon/>{label}</button>)}</nav></section></div>}<section className="work"><header><button className="mobile-menu-button" onClick={()=>setMobileMenu(true)} aria-label="Open navigation"><Menu/></button><div className="header-title"><b>{mode==="employee"&&screen==="dashboard"?"My Dashboard":titles[screen]}</b><small>{workspace==="self"?`${access?.full_name||"Employee"} · My workspace`:workspace==="team"?"Assigned team workspace":"Administration workspace"}</small></div><div className="header-actions"><SupabaseStatus/><div className="switch workspace-switch">{hasEmployeeAccess&&<button className={workspace==="self"?"selected":""} onClick={()=>chooseWorkspace("self")}>My dashboard</button>}{hasManagementAccess&&<button className={workspace==="team"?"selected":""} onClick={()=>chooseWorkspace("team")}>Team dashboard</button>}{isSystemAdmin&&<button className={workspace==="administration"?"selected":""} onClick={()=>chooseWorkspace("administration")}>Administration</button>}</div><span className="avatar">{initials||"—"}</span></div></header><div className="announcement"><span className="announcement-desktop">✦ Access is controlled by inherited roles, individual permission overrides, and assigned employee scope.</span><span className="announcement-mobile">✦ Secure, access-controlled workspace</span><button onClick={()=>go("settings")}>View access</button></div><div className="page">{render(screen,mode,period,setPeriod,go,toast,hubspot,refreshHubSpot,syncing,hubspotError,access)}</div></section>{notice&&<div className="notice">{notice}</div>}</main>
 }
 
-function SupabaseStatus(){const[state,setState]=useState<"checking"|"connected"|"restricted"|"error">("checking"),[open,setOpen]=useState(false),[email,setEmail]=useState("sharonwells@engagifii.com"),[message,setMessage]=useState(""),[sending,setSending]=useState(false);useEffect(()=>{if(!supabase){setState("error");return}supabase.auth.getSession().then(({data,error})=>setState(error?"error":data.session?"connected":"restricted"));const{data}=supabase.auth.onAuthStateChange((_event,session)=>{setState(session?"connected":"restricted");if(session)setOpen(false)});return()=>data.subscription.unsubscribe()},[]);const send=async()=>{setMessage("");if(!email.toLowerCase().endsWith("@engagifii.com")){setMessage("Use your Engagifii email address.");return}if(!supabase){setMessage("The database connection is unavailable.");return}setSending(true);const{error}=await supabase.auth.signInWithOtp({email,options:{emailRedirectTo:window.location.origin,shouldCreateUser:true}});setMessage(error?error.message:"Check your Engagifii inbox and open the newest sign-in link.");setSending(false)};const signOut=async()=>{if(supabase)await supabase.auth.signOut();setState("restricted")};const label=state==="checking"?"Checking…":state==="connected"?"Signed in securely":state==="restricted"?"Sign in":"Connection error";return <><button className={`db-status ${state}`} onClick={()=>state==="connected"?signOut():setOpen(true)} title={state==="connected"?"Sign out":"Sign in to compensation"}>{label}</button>{open&&<div className="auth-backdrop" onMouseDown={()=>setOpen(false)}><section className="auth-dialog" role="dialog" aria-modal="true" aria-labelledby="auth-title" onMouseDown={e=>e.stopPropagation()}><button className="auth-close" aria-label="Close" onClick={()=>setOpen(false)}>×</button><ShieldCheck/><h2 id="auth-title">Sign in to compensation</h2><p>We’ll email you a secure sign-in link. No password is required.</p><label>Engagifii email address<input type="email" value={email} onChange={e=>setEmail(e.target.value)} onKeyDown={e=>{if(e.key==="Enter")send()}}/></label><button className="primary auth-submit" onClick={send} disabled={sending}>{sending?"Sending…":"Email me a sign-in link"}</button>{message&&<div className="auth-message">{message}</div>}<small>Only authorized Engagifii users will be able to access compensation data.</small></section></div>}</>}
+function SupabaseStatus() {
+  const [state, setState] = useState<
+    "checking" | "connected" | "restricted" | "error"
+  >("checking");
+  const [open, setOpen] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [message, setMessage] = useState("");
+  const [sending, setSending] = useState(false);
+
+  useEffect(() => {
+    if (!supabase) {
+      setState("error");
+      return;
+    }
+
+    supabase.auth.getSession().then(({ data, error }) => {
+      setState(error ? "error" : data.session ? "connected" : "restricted");
+    });
+
+    const { data } = supabase.auth.onAuthStateChange((_event, session) => {
+      setState(session ? "connected" : "restricted");
+      if (session) setOpen(false);
+    });
+
+    return () => data.subscription.unsubscribe();
+  }, []);
+
+  const validateEmail = () => {
+    if (!email.trim().toLowerCase().endsWith("@engagifii.com")) {
+      setMessage("Use your Engagifii email address.");
+      return false;
+    }
+    return true;
+  };
+
+  const signInWithGoogle = async () => {
+    if (!supabase) {
+      setMessage("The database connection is unavailable.");
+      return;
+    }
+
+    setMessage("");
+    setSending(true);
+
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: window.location.origin,
+        queryParams: {
+          hd: "engagifii.com",
+          prompt: "select_account",
+        },
+      },
+    });
+
+    if (error) {
+      setMessage(error.message);
+      setSending(false);
+    }
+  };
+
+  const signInWithPassword = async () => {
+    setMessage("");
+
+    if (!validateEmail()) return;
+
+    if (!password) {
+      setMessage("Enter your password.");
+      return;
+    }
+
+    if (!supabase) {
+      setMessage("The database connection is unavailable.");
+      return;
+    }
+
+    setSending(true);
+
+    const { error } = await supabase.auth.signInWithPassword({
+      email: email.trim(),
+      password,
+    });
+
+    setMessage(error ? error.message : "");
+    setSending(false);
+  };
+
+  const forgotPassword = async () => {
+    setMessage("");
+
+    if (!validateEmail()) return;
+
+    if (!supabase) {
+      setMessage("The database connection is unavailable.");
+      return;
+    }
+
+    setSending(true);
+
+    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+      redirectTo: window.location.origin,
+    });
+
+    setMessage(
+      error
+        ? error.message
+        : "Check your Engagifii inbox for a password reset link.",
+    );
+
+    setSending(false);
+  };
+
+  const signOut = async () => {
+    if (supabase) await supabase.auth.signOut();
+    setState("restricted");
+  };
+
+  const label =
+    state === "checking"
+      ? "Checking…"
+      : state === "connected"
+        ? "Signed in securely"
+        : state === "restricted"
+          ? "Sign in"
+          : "Connection error";
+
+  return (
+    <>
+      <button
+        className={`db-status ${state}`}
+        onClick={() => (state === "connected" ? signOut() : setOpen(true))}
+        title={state === "connected" ? "Sign out" : "Sign in to compensation"}
+      >
+        {label}
+      </button>
+
+      {open && (
+        <div className="auth-backdrop" onMouseDown={() => setOpen(false)}>
+          <section
+            className="auth-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="auth-title"
+            onMouseDown={(e) => e.stopPropagation()}
+          >
+            <button
+              className="auth-close"
+              aria-label="Close"
+              onClick={() => setOpen(false)}
+            >
+              ×
+            </button>
+
+            <ShieldCheck />
+            <h2 id="auth-title">Sign in to compensation</h2>
+            <p>Use your Engagifii account to access the compensation tracker.</p>
+
+            <button
+              className="primary auth-submit"
+              onClick={signInWithGoogle}
+              disabled={sending}
+            >
+              Continue with Google
+            </button>
+
+            <div className="auth-divider">
+              <span>or</span>
+            </div>
+
+            <label>
+              Engagifii email address
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                autoComplete="email"
+              />
+            </label>
+
+            <label>
+              Password
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                autoComplete="current-password"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") signInWithPassword();
+                }}
+              />
+            </label>
+
+            <button
+              className="primary auth-submit"
+              onClick={signInWithPassword}
+              disabled={sending}
+            >
+              {sending ? "Working…" : "Sign in"}
+            </button>
+
+            <button
+              type="button"
+              className="auth-forgot"
+              onClick={forgotPassword}
+              disabled={sending}
+            >
+              Forgot password?
+            </button>
+
+            {message && <div className="auth-message">{message}</div>}
+
+            <small>
+              Only authorized Engagifii users can access compensation data.
+            </small>
+          </section>
+        </div>
+      )}
+    </>
+  );
+}
 
 function render(s:Screen,m:Mode,p:string,setP:(x:string)=>void,go:(x:Screen)=>void,toast:(x:string)=>void,hubspot:HubSpotSummary,refreshHubSpot:()=>void,syncing:boolean,hubspotError:string,access:AccessSummary|null){if(s==="dashboard")return m==="management"?<Manager period={p} setPeriod={setP} go={go} toast={toast} hubspot={hubspot}/>:<Employee period={p} setPeriod={setP} go={go}/>;if(s==="approvals")return <Approvals employee={m==="employee"} go={go} toast={toast}/>;if(s==="employees")return m==="employee"?<Earnings go={go} toast={toast}/>:<Employees go={go}/>;if(s==="plans")return <Plans employee={m==="employee"} toast={toast}/>;if(s==="payments")return <Payments employee={m==="employee"} go={go} toast={toast}/>;if(s==="reconciliation")return <Reconcile toast={toast}/>;if(s==="hubspot")return <HubSpot toast={toast} data={hubspot} refresh={refreshHubSpot} syncing={syncing} error={hubspotError}/>;if(s==="rules")return <Rules/>;if(s==="settings")return <SettingsPage toast={toast} access={access}/>;if(s==="logs")return <Logs/>;return <Help/>}
 function Head({title,copy,children}:{title:string;copy:string;children?:React.ReactNode}){return <div className="title"><div><h1>{title}</h1><p>{copy}</p></div>{children}</div>}
