@@ -57,6 +57,18 @@ export default function Home(){
   const adminNav=admin.filter(([id])=>allowed(id,adminPermission));
   const initials=(access?.full_name||access?.email||"User").split(/[ .@]/).filter(Boolean).slice(0,2).map(x=>x[0]?.toUpperCase()).join("");
   const allMobileNav=mode==="management"?[...nav,...adminNav]:nav;
+  if (!access) {
+  return (
+    <main className="auth-page">
+      <section className="auth-page-card">
+        <img src="/engagifii-logo.png" alt="Engagifii" />
+        <h1>Compensation Tracker</h1>
+        <p>Sign in with your Engagifii account to continue.</p>
+        <SupabaseStatus />
+      </section>
+    </main>
+  );
+}
   return <main className="shell"><aside><button className="brand" onClick={()=>go("dashboard")}><img src="/engagifii-logo.png" alt="Engagifii"/><span><small>WORKSPACE</small><b>COMPENSATION</b></span></button><nav><p>{mode==="management"?"MANAGE":"MY COMPENSATION"}</p>{nav.map(([id,label,Icon])=><button key={id} className={screen===id?"active":""} onClick={()=>go(id)}><Icon/>{label}</button>)}{mode==="management"&&adminNav.length>0&&<><p>ADMIN</p>{adminNav.map(([id,label,Icon])=><button key={id} className={screen===id?"active":""} onClick={()=>go(id)}><Icon/>{label}</button>)}</>}</nav></aside>{mobileMenu&&<div className="mobile-menu-backdrop" onClick={()=>setMobileMenu(false)}><section className="mobile-menu" onClick={e=>e.stopPropagation()}><div className="mobile-menu-head"><img src="/engagifii-logo.png" alt="Engagifii"/><button onClick={()=>setMobileMenu(false)} aria-label="Close navigation"><X/></button></div><small>{mode==="management"?"MANAGEMENT WORKSPACE":"MY COMPENSATION"}</small>{hasManagementAccess&&hasEmployeeAccess&&<div className="mobile-mode workspace-mobile"><button className={workspace==="self"?"active":""} onClick={()=>chooseWorkspace("self")}>My</button><button className={workspace==="team"?"active":""} onClick={()=>chooseWorkspace("team")}>Team</button><button className={workspace==="administration"?"active":""} onClick={()=>chooseWorkspace("administration")}>Admin</button></div>}<nav>{allMobileNav.map(([id,label,Icon])=><button key={id} className={screen===id?"active":""} onClick={()=>go(id)}><Icon/>{label}</button>)}</nav></section></div>}<section className="work"><header><button className="mobile-menu-button" onClick={()=>setMobileMenu(true)} aria-label="Open navigation"><Menu/></button><div className="header-title"><b>{mode==="employee"&&screen==="dashboard"?"My Dashboard":titles[screen]}</b><small>{workspace==="self"?`${access?.full_name||"Employee"} · My workspace`:workspace==="team"?"Assigned team workspace":"Administration workspace"}</small></div><div className="header-actions"><SupabaseStatus/><div className="switch workspace-switch">{hasEmployeeAccess&&<button className={workspace==="self"?"selected":""} onClick={()=>chooseWorkspace("self")}>My dashboard</button>}{hasManagementAccess&&<button className={workspace==="team"?"selected":""} onClick={()=>chooseWorkspace("team")}>Team dashboard</button>}{isSystemAdmin&&<button className={workspace==="administration"?"selected":""} onClick={()=>chooseWorkspace("administration")}>Administration</button>}</div><span className="avatar">{initials||"—"}</span></div></header><div className="announcement"><span className="announcement-desktop">✦ Access is controlled by inherited roles, individual permission overrides, and assigned employee scope.</span><span className="announcement-mobile">✦ Secure, access-controlled workspace</span><button onClick={()=>go("settings")}>View access</button></div><div className="page">{render(screen,mode,period,setPeriod,go,toast,hubspot,refreshHubSpot,syncing,hubspotError,access)}</div></section>{notice&&<div className="notice">{notice}</div>}</main>
 }
 
