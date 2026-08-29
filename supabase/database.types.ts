@@ -557,6 +557,13 @@ export type Database = {
             foreignKeyName: "comp_earning_lifecycle_events_plan_assignment_id_fkey"
             columns: ["plan_assignment_id"]
             isOneToOne: false
+            referencedRelation: "comp_deal_earning_refresh_delta"
+            referencedColumns: ["plan_assignment_id"]
+          },
+          {
+            foreignKeyName: "comp_earning_lifecycle_events_plan_assignment_id_fkey"
+            columns: ["plan_assignment_id"]
+            isOneToOne: false
             referencedRelation: "employee_plan_assignments"
             referencedColumns: ["id"]
           },
@@ -778,6 +785,13 @@ export type Database = {
             columns: ["plan_assignment_id"]
             isOneToOne: false
             referencedRelation: "comp_deal_earning_candidates"
+            referencedColumns: ["plan_assignment_id"]
+          },
+          {
+            foreignKeyName: "comp_earnings_plan_assignment_id_fkey"
+            columns: ["plan_assignment_id"]
+            isOneToOne: false
+            referencedRelation: "comp_deal_earning_refresh_delta"
             referencedColumns: ["plan_assignment_id"]
           },
           {
@@ -3201,10 +3215,12 @@ export type Database = {
       comp_deal_earning_refresh_delta: {
         Row: {
           approved_amount: number | null
+          calculation_status: string | null
           candidate_key: string | null
           change_type: string | null
           comp_earning_id: string | null
           company_name: string | null
+          credit_review_status: string | null
           current_earned_amount: number | null
           current_earned_date: string | null
           current_eligibility_status: string | null
@@ -3215,9 +3231,13 @@ export type Database = {
           employee_id: string | null
           full_name: string | null
           hubspot_deal_id: string | null
+          hubspot_record_url: string | null
+          invoice_paid_date: string | null
+          is_financially_protected: boolean | null
           manager_approval_status: string | null
           paid_amount: number | null
           payment_status: string | null
+          plan_assignment_id: string | null
           plan_component_id: string | null
           plan_component_name: string | null
           previous_earned_amount: number | null
@@ -3226,6 +3246,7 @@ export type Database = {
           previous_eligible_amount: number | null
           previous_eligible_date: string | null
           previous_stage_name: string | null
+          requires_credit_review: boolean | null
           requires_review: boolean | null
         }
         Relationships: []
@@ -3312,6 +3333,7 @@ export type Database = {
       }
     }
     Functions: {
+      apply_comp_deal_earning_refresh: { Args: never; Returns: Json }
       get_compensation_dashboard_data: { Args: never; Returns: Json }
       refresh_hubspot_compensation_data: {
         Args: { force_refresh?: boolean }
