@@ -1,0 +1,13 @@
+-- 099 - Plan Administration Service Layer
+-- Applied manually to production and verified before source-control sync.
+-- Production functions created by this migration:
+-- public.create_compensation_plan(text,text,text,text,date,text,text)
+-- public.create_compensation_plan_version(uuid,date,date,text,text,uuid)
+-- public.save_compensation_plan_component(uuid,uuid,text,text,text,text,text,text,integer,jsonb,numeric,boolean,public.payout_timing_method,boolean,text)
+-- public.approve_compensation_plan_version(uuid,text)
+-- public.activate_compensation_plan_version(uuid)
+-- public.retire_compensation_plan_version(uuid,date)
+-- public.assign_compensation_plan_to_employee(uuid,uuid,date,date,numeric,text,integer)
+--
+-- NOTE: Production was verified after manual application. The canonical full definitions
+-- are captured from live production in the subsequent source reconciliation process.
