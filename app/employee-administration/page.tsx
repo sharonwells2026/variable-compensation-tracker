@@ -4,11 +4,6 @@ import { ArrowLeft, ShieldCheck } from "lucide-react";
 import EmployeeAdministration from "../components/employee-administration";
 
 export default function EmployeeAdministrationPage() {
-  const go=(screen:any)=>{
-    if(screen==="settings") window.location.href="/user-administration";
-    else if(screen==="plans") window.location.href="/";
-  };
-
   return (
     <main className="employee-admin-route min-h-screen bg-[#f6f8fc] text-[#252b35]">
       <header className="border-t-[7px] border-[#a7e3e5] bg-white shadow-sm">
@@ -28,7 +23,7 @@ export default function EmployeeAdministrationPage() {
         </div>
       </header>
       <div className="mx-auto max-w-[1500px] px-6 py-6">
-        <EmployeeAdministration go={go}/>
+        <EmployeeAdministration />
       </div>
     </main>
   );
