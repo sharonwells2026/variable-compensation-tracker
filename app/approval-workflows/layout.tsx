@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import "./workflow-overrides.css";
 
 export default function ApprovalWorkflowsLayout({
@@ -5,5 +6,9 @@ export default function ApprovalWorkflowsLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  return <div className="workflow-admin-page">{children}</div>;
+  return (
+    <Suspense fallback={<div className="workflow-admin-page min-h-screen bg-[#f6f8fc]" />}>
+      <div className="workflow-admin-page">{children}</div>
+    </Suspense>
+  );
 }
