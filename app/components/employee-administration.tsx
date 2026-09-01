@@ -18,6 +18,10 @@ type EmployeeAdminRecord = {
   is_active?: boolean;
   profile_status?: string | null;
   has_app_access?: boolean;
+  draft_user_id?: string | null;
+  draft_status?: string | null;
+  draft_roles?: string[] | null;
+  compensation_participant?: boolean;
   plan_name?: string | null;
   plan_status?: string | null;
   plan_effective_start_date?: string | null;
@@ -29,13 +33,14 @@ type EmployeeAdminRecord = {
   readiness_reasons?: string[] | null;
 };
 
-function badge(label:string, tone:"good"|"warn"|"muted"="muted") {
+function badge(label:string, tone:"good"|"warn"|"muted"|"info"="muted") {
   return <span className={`employee-admin-badge ${tone}`}>{label}</span>;
 }
 
 function initials(name:string){return name.split(/\s+/).filter(Boolean).slice(0,2).map(x=>x[0]?.toUpperCase()).join("")||"—"}
+function roleLabel(role:string){return role.replaceAll("_"," ").replace(/\b\w/g,c=>c.toUpperCase())}
 
-export default function EmployeeAdministration({go}:{go?:(screen:any)=>void}) {
+export default function EmployeeAdministration() {
   const [employees,setEmployees]=useState<EmployeeAdminRecord[]>([]);
   const [loading,setLoading]=useState(true);
   const [error,setError]=useState("");
@@ -46,37 +51,8 @@ export default function EmployeeAdministration({go}:{go?:(screen:any)=>void}) {
     if(!supabase){setError("Database connection is unavailable.");setLoading(false);return}
     setLoading(true);setError("");
     const {data,error}=await supabase.rpc("get_employee_administration_data");
-    if(error){
-      // 103B is deploy-safe before its richer admin RPC exists: fall back to the
-      // workflow admin employee directory rather than rendering hard-coded people.
-      const fallback=await supabase.rpc("get_approval_workflow_admin_data");
-      if(fallback.error){setError(error.message);setEmployees([])}
-      else {
-        const raw:any=fallback.data||{};
-        const list=Array.isArray(raw)?raw:(raw.employees||[]);
-        setEmployees(list.map((x:any)=>({
-          employee_id:x.employee_id||x.id,
-          full_name:x.full_name||x.employee_name||"Unnamed employee",
-          email:x.email,
-          title:x.title,
-          department:x.department,
-          manager_name:x.manager_name,
-          is_active:x.is_active!==false,
-          profile_status:x.profile_status,
-          has_app_access:Boolean(x.has_app_access||x.profile_id),
-          plan_name:x.plan_name,
-          plan_status:x.plan_status,
-          earnings_eligibility_date:x.earnings_eligibility_date,
-          workflow_name:x.workflow_name||x.current_workflow_name,
-          workflow_status:x.workflow_status||x.current_workflow_status,
-          readiness:x.readiness,
-          readiness_reasons:x.readiness_reasons||[]
-        })));
-      }
-    } else {
-      const raw:any=data||{};
-      setEmployees(Array.isArray(raw)?raw:(raw.employees||[]));
-    }
+    if(error){setError(error.message);setEmployees([])}
+    else {const raw:any=data||{};setEmployees(Array.isArray(raw)?raw:(raw.employees||[]))}
     setLoading(false);
   };
 
@@ -86,24 +62,26 @@ export default function EmployeeAdministration({go}:{go?:(screen:any)=>void}) {
   const filtered=useMemo(()=>{
     const q=query.trim().toLowerCase();
     if(!q)return employees;
-    return employees.filter(x=>[x.full_name,x.email,x.title,x.department,x.manager_name,x.plan_name].some(v=>String(v||"").toLowerCase().includes(q)));
+    return employees.filter(x=>[x.full_name,x.email,x.title,x.department,x.manager_name,x.plan_name,...(x.draft_roles||[])].some(v=>String(v||"").toLowerCase().includes(q)));
   },[employees,query]);
 
   const counts=useMemo(()=>({
     total:employees.length,
     access:employees.filter(x=>x.has_app_access).length,
-    plans:employees.filter(x=>x.plan_name).length,
-    workflows:employees.filter(x=>x.workflow_name).length
+    preinvite:employees.filter(x=>!x.has_app_access&&x.draft_user_id).length,
+    compParticipants:employees.filter(x=>x.compensation_participant).length,
+    plansReady:employees.filter(x=>x.compensation_participant&&x.plan_name).length,
+    workflowsReady:employees.filter(x=>x.compensation_participant&&x.workflow_name).length
   }),[employees]);
 
   return <div className="employee-admin">
-    <div className="title employee-admin-title"><div><h1>Employees</h1><p>Manage employee records, application access, compensation plans, eligibility, and approval readiness.</p></div><div className="employee-admin-actions"><button className="secondary" onClick={load} disabled={loading}><RefreshCw/>Refresh</button><button className="primary" onClick={()=>go?.("settings")}><UserPlus/>Add employee / user</button></div></div>
+    <div className="title employee-admin-title"><div><h1>Employees</h1><p>Manage employee records, application access, compensation plans, eligibility, and approval readiness.</p></div><div className="employee-admin-actions"><button className="secondary" onClick={load} disabled={loading}><RefreshCw/>Refresh</button><a className="primary" href="/user-administration"><UserPlus/>Add employee / user</a></div></div>
 
     <div className="employee-admin-stats">
-      <article><small>EMPLOYEES</small><b>{counts.total}</b><span>Active compensation records</span></article>
-      <article><small>APP ACCESS</small><b>{counts.access}</b><span>Provisioned application users</span></article>
-      <article><small>PLAN ASSIGNED</small><b>{counts.plans}</b><span>Employees with a plan assignment</span></article>
-      <article><small>WORKFLOW READY</small><b>{counts.workflows}</b><span>Employees with approval routing</span></article>
+      <article><small>EMPLOYEES</small><b>{counts.total}</b><span>Active employee records</span></article>
+      <article><small>APP ACCESS</small><b>{counts.access}</b><span>{counts.preinvite} additional pre-invite configured</span></article>
+      <article><small>COMP PLANS READY</small><b>{counts.plansReady}/{counts.compParticipants}</b><span>Compensation participants with active plan</span></article>
+      <article><small>WORKFLOW READY</small><b>{counts.workflowsReady}/{counts.compParticipants}</b><span>Compensation participants with routing</span></article>
     </div>
 
     <section className="card employee-admin-card">
@@ -112,13 +90,14 @@ export default function EmployeeAdministration({go}:{go?:(screen:any)=>void}) {
       {loading?<div className="employee-admin-empty">Loading employees…</div>:filtered.length===0?<div className="employee-admin-empty">No employees match this search.</div>:<div className="employee-admin-table">
         <div className="employee-admin-head"><span>Employee</span><span>App access</span><span>Compensation plan</span><span>Approval workflow</span><span>Readiness</span><span/></div>
         {filtered.map(employee=>{
-          const ready=employee.readiness==="ready"||Boolean(employee.has_app_access&&employee.plan_name&&employee.workflow_name);
+          const ready=employee.readiness==="ready";
+          const preinviteReady=employee.readiness==="preinvite_ready";
           return <button className="employee-admin-row" key={employee.employee_id} onClick={()=>setSelected(employee)}>
             <span className="employee-admin-person"><i>{initials(employee.full_name)}</i><span><b>{employee.full_name}</b><small>{[employee.title,employee.department].filter(Boolean).join(" · ")||employee.email||"Employee"}</small></span></span>
-            <span>{employee.has_app_access?badge("Provisioned","good"):badge("Not provisioned","warn")}</span>
-            <span>{employee.plan_name?<><b>{employee.plan_name}</b><small>{employee.plan_status||"Assigned"}{employee.earnings_eligibility_date?` · Eligible ${employee.earnings_eligibility_date}`:""}</small></>:badge("Missing plan","warn")}</span>
-            <span>{employee.workflow_name?<><b>{employee.workflow_name}</b><small>{employee.workflow_status||"Configured"}</small></>:badge("Missing workflow","warn")}</span>
-            <span>{ready?badge("Ready","good"):badge("Needs setup","warn")}</span>
+            <span>{employee.has_app_access?badge("Provisioned","good"):employee.draft_user_id?badge("Pre-invite configured","info"):badge("Not provisioned","warn")}</span>
+            <span>{!employee.compensation_participant?badge("Not applicable","muted"):employee.plan_name?<><b>{employee.plan_name}</b><small>{employee.plan_status||"Assigned"}{employee.earnings_eligibility_date?` · Eligible ${employee.earnings_eligibility_date}`:""}</small></>:badge("Missing plan","warn")}</span>
+            <span>{!employee.compensation_participant?badge("Not required","muted"):employee.workflow_name?<><b>{employee.workflow_name}</b><small>{employee.workflow_status||"Configured"}</small></>:badge("Missing workflow","warn")}</span>
+            <span>{ready?badge("Ready","good"):preinviteReady?badge("Ready to invite","info"):badge("Needs setup","warn")}</span>
             <ChevronRight/>
           </button>
         })}
@@ -126,9 +105,18 @@ export default function EmployeeAdministration({go}:{go?:(screen:any)=>void}) {
     </section>
 
     {selected&&<div className="employee-admin-backdrop" onMouseDown={()=>setSelected(null)}><section className="employee-admin-drawer" onMouseDown={e=>e.stopPropagation()}><button className="employee-admin-close" onClick={()=>setSelected(null)}>×</button><div className="employee-admin-profile"><i>{initials(selected.full_name)}</i><div><small>EMPLOYEE</small><h2>{selected.full_name}</h2><p>{[selected.title,selected.department].filter(Boolean).join(" · ")||selected.email||""}</p></div></div>
-      <div className="employee-admin-detail-grid"><article><small>MANAGER</small><b>{selected.manager_name||"Not assigned"}</b></article><article><small>APP ACCESS</small><b>{selected.has_app_access?"Provisioned":"Not provisioned"}</b></article><article><small>COMPENSATION PLAN</small><b>{selected.plan_name||"No plan assigned"}</b><span>{selected.earnings_eligibility_date?`Eligibility ${selected.earnings_eligibility_date}`:"Eligibility date not available"}</span></article><article><small>APPROVAL WORKFLOW</small><b>{selected.workflow_name||"No workflow configured"}</b></article></div>
-      {selected.readiness_reasons?.length?<div className="employee-admin-readiness"><AlertTriangle/><div><b>Setup required</b>{selected.readiness_reasons.map(reason=><small key={reason}>{reason}</small>)}</div></div>:<div className="employee-admin-readiness good"><ShieldCheck/><div><b>Compensation setup is ready</b><small>No readiness issues are currently reported.</small></div></div>}
-      <div className="employee-admin-drawer-actions"><button className="secondary" onClick={()=>go?.("plans")}>Manage compensation plan</button><a className="primary" href={`/approval-workflows?employee=${encodeURIComponent(selected.employee_id)}`}>Manage approval workflow</a></div>
+      <div className="employee-admin-detail-grid">
+        <article><small>MANAGER</small><b>{selected.manager_name||"Not assigned"}</b></article>
+        <article><small>APP ACCESS</small><b>{selected.has_app_access?"Provisioned":selected.draft_user_id?"Pre-invite configured":"Not provisioned"}</b><span>{selected.draft_roles?.length?selected.draft_roles.map(roleLabel).join(" · "):selected.has_app_access?"Active application account":"No access configuration yet"}</span></article>
+        <article><small>COMPENSATION PLAN</small><b>{selected.compensation_participant?(selected.plan_name||"No plan assigned"):"Not applicable"}</b><span>{selected.compensation_participant?(selected.earnings_eligibility_date?`Eligibility ${selected.earnings_eligibility_date}`:"Eligibility date not available"):"No personal variable compensation plan required"}</span></article>
+        <article><small>APPROVAL WORKFLOW</small><b>{selected.compensation_participant?(selected.workflow_name||"No workflow configured"):"Not required"}</b><span>{selected.compensation_participant?"Required for personal earnings":"Operational/approver account only"}</span></article>
+      </div>
+      {selected.readiness_reasons?.length?<div className={`employee-admin-readiness ${selected.readiness==="preinvite_ready"?"info":""}`}><AlertTriangle/><div><b>{selected.readiness==="preinvite_ready"?"Pre-invite configuration ready":"Setup required"}</b>{selected.readiness_reasons.map(reason=><small key={reason}>{reason}</small>)}</div></div>:<div className="employee-admin-readiness good"><ShieldCheck/><div><b>Compensation setup is ready</b><small>No readiness issues are currently reported.</small></div></div>}
+      <div className="employee-admin-drawer-actions">
+        <a className="primary" href={`/user-administration?employee=${encodeURIComponent(selected.employee_id)}`}>{selected.draft_user_id?"Continue user setup":selected.has_app_access?"Manage user access":"Set up app access"}</a>
+        {selected.compensation_participant&&<button className="secondary" onClick={()=>window.location.href="/"}>Manage compensation plan</button>}
+        {selected.compensation_participant&&<a className="secondary" href={`/approval-workflows?employee=${encodeURIComponent(selected.employee_id)}`}>Manage approval workflow</a>}
+      </div>
     </section></div>}
   </div>
 }
