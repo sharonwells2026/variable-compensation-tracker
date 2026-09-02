@@ -20,7 +20,7 @@ const nav:NavItem[]=[
  {key:"plans",label:"Plans & Programs",icon:BadgeDollarSign,href:"/?workspace=admin&screen=plans",permissions:["plans.view","plans.edit"]},
  {key:"earnings",label:"Earnings & Credits",icon:WalletCards,href:"/?workspace=admin&screen=employees",permissions:["earnings.view","earnings.approve"]},
  {key:"approvals",label:"Approval Workflows",icon:Workflow,href:"/approval-workflows",permissions:["users.manage","settings.manage","earnings.approve"]},
- {key:"payroll",label:"Payroll",icon:WalletCards,href:"/?workspace=admin&screen=payments",permissions:["payments.view","payments.schedule","payments.mark_paid"]},
+ {key:"payroll",label:"Payroll",icon:WalletCards,href:"/payroll",permissions:["payments.view","payments.schedule","payments.mark_paid"]},
  {key:"data",label:"Data & Integrations",icon:Database,href:"/?workspace=admin&screen=hubspot",permissions:["hubspot.refresh","settings.manage"]},
  {key:"reconciliation",label:"Reconciliation",icon:Scale,href:"/?workspace=admin&screen=reconciliation",permissions:["flags.resolve","audit.view_assigned","audit.view_all"]},
  {key:"reports",label:"Reports & Analytics",icon:FileBarChart,href:"/reports",permissions:["earnings.view","payments.view","audit.view_assigned","audit.view_all"]},
