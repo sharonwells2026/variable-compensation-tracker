@@ -23,7 +23,7 @@ const nav:NavItem[]=[
  {key:"payroll",label:"Payroll",icon:WalletCards,href:"/?workspace=admin&screen=payments",permissions:["payments.view","payments.schedule","payments.mark_paid"]},
  {key:"data",label:"Data & Integrations",icon:Database,href:"/?workspace=admin&screen=hubspot",permissions:["hubspot.refresh","settings.manage"]},
  {key:"reconciliation",label:"Reconciliation",icon:Scale,href:"/?workspace=admin&screen=reconciliation",permissions:["flags.resolve","audit.view_assigned","audit.view_all"]},
- {key:"reports",label:"Reports & Analytics",icon:FileBarChart,href:"/?workspace=admin&screen=reports",permissions:["earnings.view","payments.view","audit.view_assigned","audit.view_all"]},
+ {key:"reports",label:"Reports & Analytics",icon:FileBarChart,href:"/reports",permissions:["earnings.view","payments.view","audit.view_assigned","audit.view_all"]},
  {key:"audit",label:"Audit & Activity",icon:History,href:"/?workspace=admin&screen=logs",permissions:["audit.view_assigned","audit.view_all"]},
  {key:"settings",label:"Settings",icon:Settings,href:"/settings",permissions:["settings.manage"]},
 ];
