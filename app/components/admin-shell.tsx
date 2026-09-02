@@ -18,13 +18,13 @@ const nav:NavItem[]=[
  {key:"overview",label:"Overview",icon:LayoutDashboard,href:"/admin-overview"},
  {key:"people",label:"People & Access",icon:Users,href:"/employee-administration",permissions:["users.manage"]},
  {key:"plans",label:"Plans & Programs",icon:BadgeDollarSign,href:"/plans",permissions:["plans.view","plans.edit"]},
- {key:"earnings",label:"Earnings & Credits",icon:WalletCards,href:"/?workspace=admin&screen=employees",permissions:["earnings.view","earnings.approve"]},
+ {key:"earnings",label:"Earnings & Credits",icon:WalletCards,href:"/earnings",permissions:["earnings.view","earnings.approve"]},
  {key:"approvals",label:"Approval Workflows",icon:Workflow,href:"/approval-workflows",permissions:["users.manage","settings.manage","earnings.approve"]},
  {key:"payroll",label:"Payroll",icon:WalletCards,href:"/payroll",permissions:["payments.view","payments.schedule","payments.mark_paid"]},
  {key:"data",label:"Data & Integrations",icon:Database,href:"/data-integrations",permissions:["hubspot.refresh","settings.manage"]},
  {key:"reconciliation",label:"Reconciliation",icon:Scale,href:"/reconciliation",permissions:["flags.resolve","audit.view_assigned","audit.view_all"]},
  {key:"reports",label:"Reports & Analytics",icon:FileBarChart,href:"/reports",permissions:["earnings.view","payments.view","audit.view_assigned","audit.view_all"]},
- {key:"audit",label:"Audit & Activity",icon:History,href:"/?workspace=admin&screen=logs",permissions:["audit.view_assigned","audit.view_all"]},
+ {key:"audit",label:"Audit & Activity",icon:History,href:"/audit-activity",permissions:["audit.view_assigned","audit.view_all"]},
  {key:"settings",label:"Settings",icon:Settings,href:"/settings",permissions:["settings.manage"]},
 ];
 
