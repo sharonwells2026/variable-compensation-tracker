@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import AdminShell from "../components/admin-shell";
 import "./workflow-overrides.css";
 
 export default function ApprovalWorkflowsLayout({
@@ -7,8 +8,14 @@ export default function ApprovalWorkflowsLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <Suspense fallback={<div className="workflow-admin-page min-h-screen bg-[#f6f8fc]" />}>
-      <div className="workflow-admin-page">{children}</div>
-    </Suspense>
+    <AdminShell
+      section="approvals"
+      title="Approval Workflows"
+      description="Effective-dated approval routing, finance handoffs, and workflow readiness."
+    >
+      <Suspense fallback={<div className="workflow-admin-page min-h-[420px]" />}>
+        <div className="workflow-admin-page">{children}</div>
+      </Suspense>
+    </AdminShell>
   );
 }
