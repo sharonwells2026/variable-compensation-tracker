@@ -1,8 +1,30 @@
-/* Route-local isolation for /approval-workflows.
-   The legacy compensation shell defines a global `aside` rule that fixes every
-   aside to the left edge. This page uses an aside as a normal grid column, so
-   reset those inherited shell styles here. */
+/* Route-local isolation for /approval-workflows inside the shared Administration shell. */
 
+.workflow-admin-page {
+  width: 100%;
+  min-width: 0;
+}
+
+.workflow-admin-page > main {
+  min-height: 0 !important;
+  background: transparent !important;
+}
+
+/* The shared AdminShell owns route title, account controls, workspace context,
+   and navigation. Hide the legacy route header instead of showing two shells. */
+.workflow-admin-page > main > header {
+  display: none !important;
+}
+
+.workflow-admin-page > main > div {
+  width: 100%;
+  max-width: none !important;
+  min-width: 0;
+  padding: 0 !important;
+}
+
+/* The legacy compensation shell defines a global aside rule that fixes every
+   aside to the left edge. Workflow employee selection is a local grid column. */
 .workflow-admin-page aside {
   position: static !important;
   inset: auto !important;
@@ -16,16 +38,6 @@
   overflow: visible !important;
   box-shadow: 0 1px 2px rgb(15 23 42 / 0.05) !important;
   z-index: auto !important;
-}
-
-.workflow-admin-page {
-  width: 100%;
-  min-width: 0;
-}
-
-.workflow-admin-page > div:nth-of-type(2) {
-  width: 100%;
-  min-width: 0;
 }
 
 .workflow-admin-page section {
