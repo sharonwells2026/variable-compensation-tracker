@@ -6,11 +6,17 @@ This backlog tracks structural, workflow, navigation, and usability findings whi
 
 - [ ] **Retire duplicate application shells.** The legacy root application still owns a parallel sidebar, header, workspace switcher, and screen navigation while newer Administration routes use `AdminShell`.
 - [ ] **Make root navigation URL-aware.** Legacy root screens do not yet reliably hydrate `workspace` and `screen` from query parameters, so Administration links that target root pseudo-screens can land in the wrong state.
+- [x] **Dedicated Administration Overview route.** Overview now opens `/admin-overview` instead of routing through the legacy root Administration pseudo-screen.
+- [x] **Dedicated Plans & Programs route.** Administration plan navigation now opens `/plans`.
+- [x] **Dedicated Data & Integrations route.** Administration integration navigation now opens `/data-integrations`.
+- [x] **Dedicated Reconciliation route.** Administration reconciliation navigation now opens `/reconciliation`.
 - [x] **Fix Approval Workflow finance requirement field.** UI now reads backend `is_required_for_payment` rather than the obsolete `is_required` field.
 - [x] **Fix Approval Workflow activation readiness count.** UI now reads backend `unresolved_assignee_count` after readiness checks.
 - [x] **Fix Approval Workflow history ordering field.** UI now displays `approval_order` returned by the backend.
 - [x] **Route Payroll to real finance queue.** Administration Payroll now opens `/payroll`, backed by `get_my_comp_earning_handoff_tasks` and `act_on_comp_earning_handoff`.
 - [ ] **Complete Approval Workflows shell migration.** Remove its route-local header/back navigation and render it fully inside the shared Administration shell.
+- [ ] **Migrate Earnings & Credits from legacy shell.** The table is protected by RLS and there is not yet a dedicated permission-aware Administration read RPC, so do not replace the legacy screen until an equivalent secure read contract exists.
+- [ ] **Migrate Audit & Activity from legacy shell.** `app_access_audit_events` is protected by RLS and there is not yet a dedicated permission-aware audit-feed RPC, so preserve current access until the secure read contract is added.
 
 ## P1 — Core administration UX
 
@@ -67,6 +73,7 @@ This backlog tracks structural, workflow, navigation, and usability findings whi
 - [ ] Recheck People & Access directory width, table overflow, drawer behavior, and responsive states in branch deploy.
 - [ ] Recheck Settings density and section hierarchy in branch deploy.
 - [ ] Recheck Reports spacing and report-library cards in branch deploy.
+- [ ] Recheck Administration Overview summary density and route cards in branch deploy.
 - [ ] Recheck Approval Workflows after shell migration, especially employee selector, workflow editor density, and mobile stacking.
 - [ ] Recheck Netlify toolbar overlap separately from application layout; do not treat Netlify overlay as product UI.
 
