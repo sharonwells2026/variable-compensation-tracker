@@ -1,0 +1,36 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { AlertTriangle, BadgeDollarSign, Database, FileBarChart, RefreshCw, Scale, ShieldCheck, Users, WalletCards, Workflow } from "lucide-react";
+import { createClient } from "@supabase/supabase-js";
+import AdminShell from "../components/admin-shell";
+
+const supabase=createClient(process.env.NEXT_PUBLIC_SUPABASE_URL||"https://bwdtbsqojtxfbeyfkang.supabase.co",process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY||"");
+
+type DashboardData={deals:number;companies:number;associations:number;unlinkedDeals:number;unreviewedChanges:number;lastSync:string|null};
+type PeopleData={employees:any[];drafts:any[];active_plan_versions:any[]};
+const emptyDashboard:DashboardData={deals:0,companies:0,associations:0,unlinkedDeals:0,unreviewedChanges:0,lastSync:null};
+const emptyPeople:PeopleData={employees:[],drafts:[],active_plan_versions:[]};
+
+export default function AdminOverviewPage(){
+ const[dashboard,setDashboard]=useState<DashboardData>(emptyDashboard),[people,setPeople]=useState<PeopleData>(emptyPeople),[loading,setLoading]=useState(true),[error,setError]=useState("");
+ const load=async()=>{setLoading(true);setError("");const[d,p]=await Promise.all([supabase.rpc("get_compensation_dashboard_data"),supabase.rpc("get_user_administration_data")]);const problems=[d.error?.message,p.error?.message].filter(Boolean);if(problems.length)setError(problems.join(" · "));if(d.data)setDashboard({...emptyDashboard,...d.data});if(p.data)setPeople({...emptyPeople,...p.data});setLoading(false)};
+ useEffect(()=>{load()},[]);
+ const employees=people.employees||[];const drafts=people.drafts||[];const participants=employees.filter((x:any)=>x.current_plan_version_id).length;const activeAccess=employees.filter((x:any)=>x.app_access_active).length;const configuredDrafts=drafts.filter((x:any)=>x.status!=="cancelled").length;
+ const operations=[
+  {href:"/employee-administration",label:"People & Access",desc:"Employee records, application access, readiness, and provisioning.",icon:Users},
+  {href:"/plans",label:"Plans & Programs",desc:"Plan versions, assignments, eligibility dates, and plan administration.",icon:BadgeDollarSign},
+  {href:"/approval-workflows",label:"Approval Workflows",desc:"Effective-dated employee routing and required finance handoffs.",icon:Workflow},
+  {href:"/payroll",label:"Payroll",desc:"Finance acknowledgements, payment readiness, and payroll processing.",icon:WalletCards},
+  {href:"/data-integrations",label:"Data & Integrations",desc:"HubSpot sync health, source changes, and integration operations.",icon:Database},
+  {href:"/reconciliation",label:"Reconciliation",desc:"Source exceptions, unmatched records, and control review.",icon:Scale},
+  {href:"/reports",label:"Reports & Analytics",desc:"Compensation performance, payroll liability, and audit-ready analysis.",icon:FileBarChart},
+ ];
+ return <AdminShell section="overview" title="Administration Overview" description="Operational health, setup readiness, and administrative workspaces."><div className="space-y-5">
+  <div className="flex flex-wrap items-center justify-between gap-3"><div><h1 className="text-xl font-bold">Administration workspace</h1><p className="mt-1 text-xs text-[#77808e]">A task-oriented starting point for administering compensation without routing through the legacy management shell.</p></div><button onClick={load} disabled={loading} className="flex items-center gap-1 rounded-lg border bg-white px-3 py-2 text-xs font-bold"><RefreshCw size={14}/>{loading?"Refreshing…":"Refresh"}</button></div>
+  {error&&<div className="flex gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800"><AlertTriangle size={17}/><div><b>Some administrative summary data could not load</b><div className="text-xs">{error}</div></div></div>}
+  <div className="grid gap-3 md:grid-cols-4"><article className="rounded-xl border bg-white p-4 shadow-sm"><small className="text-[10px] font-bold text-[#77808e]">EMPLOYEES</small><b className="mt-1 block text-2xl">{loading?"—":employees.length}</b><span className="text-[11px] text-[#77808e]">{activeAccess} with active app access</span></article><article className="rounded-xl border bg-white p-4 shadow-sm"><small className="text-[10px] font-bold text-[#77808e]">COMP PARTICIPANTS</small><b className="mt-1 block text-2xl">{loading?"—":participants}</b><span className="text-[11px] text-[#77808e]">Employees with an active plan assignment</span></article><article className="rounded-xl border bg-white p-4 shadow-sm"><small className="text-[10px] font-bold text-[#77808e]">PRE-INVITE SETUPS</small><b className="mt-1 block text-2xl">{loading?"—":configuredDrafts}</b><span className="text-[11px] text-[#77808e]">Provisioning drafts not yet activated</span></article><article className="rounded-xl border bg-white p-4 shadow-sm"><small className="text-[10px] font-bold text-[#77808e]">ACTIVE PLAN VERSIONS</small><b className="mt-1 block text-2xl">{loading?"—":people.active_plan_versions?.length||0}</b><span className="text-[11px] text-[#77808e]">Current configurable plan versions</span></article></div>
+  <section className="rounded-xl border bg-white p-5 shadow-sm"><div className="flex items-start justify-between gap-4"><div><h2 className="text-sm font-bold">Source-data health</h2><p className="mt-1 text-xs text-[#77808e]">Administrative operations depend on current, linked, reviewable source data.</p></div><ShieldCheck size={18} className="text-[#2095f3]"/></div><div className="mt-4 grid gap-3 md:grid-cols-4"><div className="rounded-lg border bg-[#fafbfd] p-3"><small className="text-[9px] font-bold text-[#77808e]">HUBSPOT DEALS</small><b className="mt-1 block text-base">{loading?"—":dashboard.deals}</b></div><div className="rounded-lg border bg-[#fafbfd] p-3"><small className="text-[9px] font-bold text-[#77808e]">UNLINKED DEALS</small><b className="mt-1 block text-base">{loading?"—":dashboard.unlinkedDeals}</b></div><div className="rounded-lg border bg-[#fafbfd] p-3"><small className="text-[9px] font-bold text-[#77808e]">CHANGES TO REVIEW</small><b className="mt-1 block text-base">{loading?"—":dashboard.unreviewedChanges}</b></div><div className="rounded-lg border bg-[#fafbfd] p-3"><small className="text-[9px] font-bold text-[#77808e]">LAST SYNC</small><b className="mt-1 block text-xs">{dashboard.lastSync?new Date(dashboard.lastSync).toLocaleString():"No completed sync found"}</b></div></div></section>
+  <section className="rounded-xl border bg-white p-5 shadow-sm"><h2 className="text-sm font-bold">Administration areas</h2><p className="mt-1 text-xs text-[#77808e]">Each destination owns one administrative job instead of stacking unrelated controls into a single Settings page.</p><div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">{operations.map(item=>{const Icon=item.icon;return <a key={item.href} href={item.href} className="rounded-lg border bg-[#fafbfd] p-4 no-underline text-inherit hover:border-[#2095f3]"><div className="flex items-center gap-2"><Icon size={17} className="text-[#2095f3]"/><b className="text-sm">{item.label}</b></div><p className="mt-2 text-xs leading-5 text-[#77808e]">{item.desc}</p></a>})}</div></section>
+ </div></AdminShell>;
+}
