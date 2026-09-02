@@ -17,7 +17,7 @@ type NavItem={key:AdminSection;label:string;icon:any;href:string;permissions?:st
 const nav:NavItem[]=[
  {key:"overview",label:"Overview",icon:LayoutDashboard,href:"/?workspace=admin"},
  {key:"people",label:"People & Access",icon:Users,href:"/employee-administration",permissions:["users.manage"]},
- {key:"plans",label:"Plans & Programs",icon:BadgeDollarSign,href:"/?workspace=admin&screen=plans",permissions:["plans.view","plans.edit"]},
+ {key:"plans",label:"Plans & Programs",icon:BadgeDollarSign,href:"/plans",permissions:["plans.view","plans.edit"]},
  {key:"earnings",label:"Earnings & Credits",icon:WalletCards,href:"/?workspace=admin&screen=employees",permissions:["earnings.view","earnings.approve"]},
  {key:"approvals",label:"Approval Workflows",icon:Workflow,href:"/approval-workflows",permissions:["users.manage","settings.manage","earnings.approve"]},
  {key:"payroll",label:"Payroll",icon:WalletCards,href:"/payroll",permissions:["payments.view","payments.schedule","payments.mark_paid"]},
