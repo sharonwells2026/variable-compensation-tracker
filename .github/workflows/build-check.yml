@@ -1,0 +1,32 @@
+name: Compensation Tracker Build Check
+
+on:
+  push:
+    branches:
+      - comp-tracker-development
+  pull_request:
+    branches:
+      - netlify-auth
+
+jobs:
+  next-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build production application
+        run: npx next build
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: https://bwdtbsqojtxfbeyfkang.supabase.co
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_UEFOn-Rc0sczK9PwqVI91w_IAz95BcH
