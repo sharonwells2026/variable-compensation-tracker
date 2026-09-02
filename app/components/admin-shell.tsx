@@ -3,92 +3,19 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Bell, Bot, ChevronDown, CircleUserRound, HelpCircle, LogOut, Search, Settings, ShieldCheck, Users, Workflow, WalletCards, FileBarChart, Database, Scale, History, LayoutDashboard, BadgeDollarSign } from "lucide-react";
 import { createClient } from "@supabase/supabase-js";
+import "./admin-shell.css";
 
 const supabaseUrl=process.env.NEXT_PUBLIC_SUPABASE_URL||"https://bwdtbsqojtxfbeyfkang.supabase.co";
 const supabaseKey=process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY||process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY||"";
 const supabase=supabaseKey?createClient(supabaseUrl,supabaseKey):null;
 
 type AdminSection="overview"|"people"|"plans"|"earnings"|"approvals"|"payroll"|"data"|"reconciliation"|"reports"|"audit"|"settings";
-
-type Props={
-  section:AdminSection;
-  title:string;
-  description?:string;
-  children:React.ReactNode;
-};
-
-const nav=[
-  {key:"overview",label:"Overview",icon:LayoutDashboard,href:"/?workspace=admin"},
-  {key:"people",label:"People & Access",icon:Users,href:"/employee-administration"},
-  {key:"plans",label:"Plans & Programs",icon:BadgeDollarSign,href:"/?workspace=admin&screen=plans"},
-  {key:"earnings",label:"Earnings & Credits",icon:WalletCards,href:"/?workspace=admin&screen=employees"},
-  {key:"approvals",label:"Approval Workflows",icon:Workflow,href:"/approval-workflows"},
-  {key:"payroll",label:"Payroll",icon:WalletCards,href:"/?workspace=admin&screen=payments"},
-  {key:"data",label:"Data & Integrations",icon:Database,href:"/?workspace=admin&screen=hubspot"},
-  {key:"reconciliation",label:"Reconciliation",icon:Scale,href:"/?workspace=admin&screen=hubspot"},
-  {key:"reports",label:"Reports & Analytics",icon:FileBarChart,href:"/?workspace=admin&screen=reports"},
-  {key:"audit",label:"Audit & Activity",icon:History,href:"/?workspace=admin&screen=activity"},
-  {key:"settings",label:"Settings",icon:Settings,href:"/?workspace=admin&screen=settings"},
-] as const;
-
+type Props={section:AdminSection;title:string;description?:string;children:React.ReactNode};
+const nav=[{key:"overview",label:"Overview",icon:LayoutDashboard,href:"/?workspace=admin"},{key:"people",label:"People & Access",icon:Users,href:"/employee-administration"},{key:"plans",label:"Plans & Programs",icon:BadgeDollarSign,href:"/?workspace=admin&screen=plans"},{key:"earnings",label:"Earnings & Credits",icon:WalletCards,href:"/?workspace=admin&screen=employees"},{key:"approvals",label:"Approval Workflows",icon:Workflow,href:"/approval-workflows"},{key:"payroll",label:"Payroll",icon:WalletCards,href:"/?workspace=admin&screen=payments"},{key:"data",label:"Data & Integrations",icon:Database,href:"/?workspace=admin&screen=hubspot"},{key:"reconciliation",label:"Reconciliation",icon:Scale,href:"/?workspace=admin&screen=hubspot"},{key:"reports",label:"Reports & Analytics",icon:FileBarChart,href:"/?workspace=admin&screen=reports"},{key:"audit",label:"Audit & Activity",icon:History,href:"/?workspace=admin&screen=activity"},{key:"settings",label:"Settings",icon:Settings,href:"/?workspace=admin&screen=settings"}] as const;
 function initials(name:string){return name.split(/\s+/).filter(Boolean).slice(0,2).map(x=>x[0]?.toUpperCase()).join("")||"ME"}
-
 export default function AdminShell({section,title,description,children}:Props){
-  const[accountOpen,setAccountOpen]=useState(false);
-  const[identity,setIdentity]=useState({name:"My account",email:"",role:"Administrator"});
-  const menuRef=useRef<HTMLDivElement|null>(null);
-
-  useEffect(()=>{
-    let live=true;
-    const load=async()=>{
-      if(!supabase)return;
-      const{data}=await supabase.auth.getUser();
-      const user=data.user;
-      if(!user||!live)return;
-      const metadata=user.user_metadata||{};
-      setIdentity({name:metadata.full_name||metadata.name||user.email?.split("@")[0]||"My account",email:user.email||"",role:"Administration workspace"});
-    };
-    load();
-    const close=(e:MouseEvent)=>{if(menuRef.current&&!menuRef.current.contains(e.target as Node))setAccountOpen(false)};
-    document.addEventListener("mousedown",close);
-    return()=>{live=false;document.removeEventListener("mousedown",close)};
-  },[]);
-
-  const current=useMemo(()=>nav.find(x=>x.key===section),[section]);
-  const signOut=async()=>{if(supabase)await supabase.auth.signOut();window.location.href="/"};
-
-  return <div className="admin-shell-v2">
-    <aside className="admin-shell-sidebar">
-      <a className="admin-shell-brand" href="/"><span>ENGAGIFII</span><b>Variable Compensation</b></a>
-      <div className="admin-shell-workspace"><small>WORKSPACE</small><b>Administration</b><span>Configure and operate compensation</span></div>
-      <nav className="admin-shell-nav" aria-label="Administration navigation">
-        {nav.map(item=>{const Icon=item.icon;return <a key={item.key} href={item.href} className={item.key===section?"active":""}><Icon size={17}/><span>{item.label}</span></a>})}
-      </nav>
-      <div className="admin-shell-side-footer"><a href="/"><HelpCircle size={16}/>Help & knowledge</a></div>
-    </aside>
-
-    <div className="admin-shell-main">
-      <header className="admin-shell-header">
-        <div className="admin-shell-context"><small>ADMINISTRATION / {current?.label.toUpperCase()}</small><b>{title}</b>{description&&<span>{description}</span>}</div>
-        <div className="admin-shell-global">
-          <button className="admin-shell-icon" aria-label="Search"><Search size={17}/></button>
-          <button className="admin-shell-icon" aria-label="AI assistant"><Bot size={17}/></button>
-          <button className="admin-shell-icon" aria-label="Notifications"><Bell size={17}/></button>
-          <div className="admin-account" ref={menuRef}>
-            <button className="admin-account-trigger" onClick={()=>setAccountOpen(x=>!x)} aria-expanded={accountOpen}><span className="admin-account-avatar">{initials(identity.name)}</span><span className="admin-account-copy"><b>{identity.name}</b><small>{identity.role}</small></span><ChevronDown size={14}/></button>
-            {accountOpen&&<div className="admin-account-menu">
-              <div className="admin-account-identity"><CircleUserRound size={18}/><span><b>{identity.name}</b><small>{identity.email||"Signed in"}</small></span></div>
-              <a href="/?workspace=my"><CircleUserRound size={15}/>My compensation</a>
-              <a href="/?workspace=team"><Users size={15}/>Team workspace</a>
-              <a href="/?workspace=admin"><ShieldCheck size={15}/>Administration</a>
-              <a href="/?workspace=admin&screen=settings"><Settings size={15}/>Preferences & settings</a>
-              <button onClick={signOut}><LogOut size={15}/>Log out</button>
-            </div>}
-          </div>
-        </div>
-      </header>
-      <div className="admin-shell-mobile-nav"><select aria-label="Administration section" value={current?.href||""} onChange={e=>window.location.href=e.target.value}>{nav.map(item=><option key={item.key} value={item.href}>{item.label}</option>)}</select></div>
-      <main className="admin-shell-content">{children}</main>
-    </div>
-  </div>
+ const[accountOpen,setAccountOpen]=useState(false);const[identity,setIdentity]=useState({name:"My account",email:"",role:"Administrator"});const menuRef=useRef<HTMLDivElement|null>(null);
+ useEffect(()=>{let live=true;const load=async()=>{if(!supabase)return;const{data}=await supabase.auth.getUser();const user=data.user;if(!user||!live)return;const metadata=user.user_metadata||{};setIdentity({name:metadata.full_name||metadata.name||user.email?.split("@")[0]||"My account",email:user.email||"",role:"Administration workspace"})};load();const close=(e:MouseEvent)=>{if(menuRef.current&&!menuRef.current.contains(e.target as Node))setAccountOpen(false)};document.addEventListener("mousedown",close);return()=>{live=false;document.removeEventListener("mousedown",close)}},[]);
+ const current=useMemo(()=>nav.find(x=>x.key===section),[section]);const signOut=async()=>{if(supabase)await supabase.auth.signOut();window.location.href="/"};
+ return <div className="admin-shell-v2"><aside className="admin-shell-sidebar"><a className="admin-shell-brand" href="/"><span>ENGAGIFII</span><b>Variable Compensation</b></a><div className="admin-shell-workspace"><small>WORKSPACE</small><b>Administration</b><span>Configure and operate compensation</span></div><nav className="admin-shell-nav" aria-label="Administration navigation">{nav.map(item=>{const Icon=item.icon;return <a key={item.key} href={item.href} className={item.key===section?"active":""}><Icon size={17}/><span>{item.label}</span></a>})}</nav><div className="admin-shell-side-footer"><a href="/"><HelpCircle size={16}/>Help & knowledge</a></div></aside><div className="admin-shell-main"><header className="admin-shell-header"><div className="admin-shell-context"><small>ADMINISTRATION / {current?.label.toUpperCase()}</small><b>{title}</b>{description&&<span>{description}</span>}</div><div className="admin-shell-global"><button className="admin-shell-icon" aria-label="Search"><Search size={17}/></button><button className="admin-shell-icon" aria-label="AI assistant"><Bot size={17}/></button><button className="admin-shell-icon" aria-label="Notifications"><Bell size={17}/></button><div className="admin-account" ref={menuRef}><button className="admin-account-trigger" onClick={()=>setAccountOpen(x=>!x)} aria-expanded={accountOpen}><span className="admin-account-avatar">{initials(identity.name)}</span><span className="admin-account-copy"><b>{identity.name}</b><small>{identity.role}</small></span><ChevronDown size={14}/></button>{accountOpen&&<div className="admin-account-menu"><div className="admin-account-identity"><CircleUserRound size={18}/><span><b>{identity.name}</b><small>{identity.email||"Signed in"}</small></span></div><a href="/?workspace=my"><CircleUserRound size={15}/>My compensation</a><a href="/?workspace=team"><Users size={15}/>Team workspace</a><a href="/?workspace=admin"><ShieldCheck size={15}/>Administration</a><a href="/?workspace=admin&screen=settings"><Settings size={15}/>Preferences & settings</a><button onClick={signOut}><LogOut size={15}/>Log out</button></div>}</div></div></header><div className="admin-shell-mobile-nav"><select aria-label="Administration section" value={current?.href||""} onChange={e=>window.location.href=e.target.value}>{nav.map(item=><option key={item.key} value={item.href}>{item.label}</option>)}</select></div><main className="admin-shell-content">{children}</main></div></div>
 }
