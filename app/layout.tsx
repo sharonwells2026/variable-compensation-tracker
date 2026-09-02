@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import GlobalAccountController from "./components/global-account-controller";
 
 export const metadata: Metadata = {
   title: "Variable Compensation Tracker",
@@ -17,7 +18,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className="antialiased">{children}</body>
+      <body className="antialiased">
+        {children}
+        <GlobalAccountController />
+      </body>
     </html>
   );
 }
