@@ -8,15 +8,15 @@ This backlog tracks structural, workflow, navigation, and usability findings whi
 - [ ] **Make root navigation URL-aware.** Legacy root screens do not yet reliably hydrate `workspace` and `screen` from query parameters, so Administration links that target root pseudo-screens can land in the wrong state.
 - [x] **Dedicated Administration Overview route.** Overview now opens `/admin-overview` instead of routing through the legacy root Administration pseudo-screen.
 - [x] **Dedicated Plans & Programs route.** Administration plan navigation now opens `/plans`.
+- [x] **Dedicated Earnings & Credits route.** Administration earnings navigation now opens `/earnings`, backed by a permission- and employee-scope-aware read RPC.
 - [x] **Dedicated Data & Integrations route.** Administration integration navigation now opens `/data-integrations`.
 - [x] **Dedicated Reconciliation route.** Administration reconciliation navigation now opens `/reconciliation`.
+- [x] **Dedicated Audit & Activity route.** Administration audit navigation now opens `/audit-activity`, backed by a permission- and employee-scope-aware audit feed RPC.
 - [x] **Fix Approval Workflow finance requirement field.** UI now reads backend `is_required_for_payment` rather than the obsolete `is_required` field.
 - [x] **Fix Approval Workflow activation readiness count.** UI now reads backend `unresolved_assignee_count` after readiness checks.
 - [x] **Fix Approval Workflow history ordering field.** UI now displays `approval_order` returned by the backend.
 - [x] **Route Payroll to real finance queue.** Administration Payroll now opens `/payroll`, backed by `get_my_comp_earning_handoff_tasks` and `act_on_comp_earning_handoff`.
 - [ ] **Complete Approval Workflows shell migration.** Remove its route-local header/back navigation and render it fully inside the shared Administration shell.
-- [ ] **Migrate Earnings & Credits from legacy shell.** The table is protected by RLS and there is not yet a dedicated permission-aware Administration read RPC, so do not replace the legacy screen until an equivalent secure read contract exists.
-- [ ] **Migrate Audit & Activity from legacy shell.** `app_access_audit_events` is protected by RLS and there is not yet a dedicated permission-aware audit-feed RPC, so preserve current access until the secure read contract is added.
 
 ## P1 — Core administration UX
 
@@ -27,6 +27,7 @@ This backlog tracks structural, workflow, navigation, and usability findings whi
 - [x] Employee and Application User remain distinct concepts in People & Access / provisioning.
 - [x] Administration navigation filtered by effective permissions.
 - [x] Safe View-as-User permission (`users.preview_as`) established in backend.
+- [x] Harden new secure read RPCs and View-as-User RPCs against anonymous execution; authenticated callers remain permission-checked inside the functions.
 - [ ] Implement persistent read-only View-as-User UI with banner and Return to my account.
 - [ ] Add explicit permission-denied state for direct navigation to restricted Administration routes.
 - [ ] Normalize loading, empty, warning, error, and success states across all Administration pages.
@@ -74,8 +75,17 @@ This backlog tracks structural, workflow, navigation, and usability findings whi
 - [ ] Recheck Settings density and section hierarchy in branch deploy.
 - [ ] Recheck Reports spacing and report-library cards in branch deploy.
 - [ ] Recheck Administration Overview summary density and route cards in branch deploy.
+- [ ] Recheck Earnings & Credits table density, horizontal overflow, filters, and mobile strategy in branch deploy.
+- [ ] Recheck Audit & Activity event density, details disclosure, long JSON snapshots, and mobile behavior in branch deploy.
 - [ ] Recheck Approval Workflows after shell migration, especially employee selector, workflow editor density, and mobile stacking.
 - [ ] Recheck Netlify toolbar overlap separately from application layout; do not treat Netlify overlay as product UI.
+
+## Security / platform findings
+
+- [ ] Review Supabase advisor warning set before launch. Many operational tables intentionally use RLS with no direct client policies because access is mediated through permission-checked SECURITY DEFINER RPCs; document this architecture rather than adding broad policies blindly.
+- [ ] Review remaining SECURITY DEFINER execute grants before launch. Signed-in execution is intentional only where the function itself validates permissions/scope; anonymous execution should remain revoked for privileged RPCs.
+- [ ] Enable Supabase leaked-password protection before production launch unless Engagifii security policy explicitly chooses another control.
+- [ ] Address mutable search path warning on `public.set_updated_at` before production launch.
 
 ## Launch-readiness checks
 
