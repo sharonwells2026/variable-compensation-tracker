@@ -3,7 +3,7 @@
 import {useEffect,useState} from "react";
 import Link from "next/link";
 import {createClient} from "@supabase/supabase-js";
-import {AlertTriangle,CheckCircle2,CircleDollarSign,ClipboardCheck,History,RefreshCw,Settings,ShieldCheck,Users,WalletCards} from "lucide-react";
+import {AlertTriangle,BarChart3,CheckCircle2,ClipboardCheck,History,RefreshCw,Settings,ShieldCheck,Users,WalletCards} from "lucide-react";
 
 const supabaseUrl=process.env.NEXT_PUBLIC_SUPABASE_URL||"https://bwdtbsqojtxfbeyfkang.supabase.co";
 const supabaseKey=process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY||"sb_publishable_UEFOn-Rc0sczK9PwqVI91w_IAz95BcH";
@@ -13,21 +13,24 @@ type Access={full_name?:string;email?:string;roles:string[];permissions:string[]
 type Summary={counts:Record<string,number>;amounts:Record<string,number>};
 type ReviewBatch={status:string;proposed_total:number;};
 type ReviewPayload={batches:ReviewBatch[]};
+type EarningsSummary={summary:{current_earnings:number;payment_exceptions:number;awaiting_approval:number}};
 function money(value:number){return new Intl.NumberFormat("en-US",{style:"currency",currency:"USD"}).format(Number(value||0))}
 
 export default function ManagePage(){
   const[access,setAccess]=useState<Access|null>(null);
   const[summary,setSummary]=useState<Summary|null>(null);
   const[reviews,setReviews]=useState<ReviewPayload>({batches:[]});
+  const[earnings,setEarnings]=useState<EarningsSummary|null>(null);
   const[loading,setLoading]=useState(true);
   const[error,setError]=useState("");
   const load=async()=>{
     if(!supabase){setError("Database connection unavailable");setLoading(false);return}
     setLoading(true);setError("");
-    const[a,b,c]=await Promise.all([supabase.rpc("get_current_user_access"),supabase.rpc("get_payout_readiness_summary"),supabase.rpc("get_compensation_review_batches")]);
+    const[a,b,c,d]=await Promise.all([supabase.rpc("get_current_user_access"),supabase.rpc("get_payout_readiness_summary"),supabase.rpc("get_compensation_review_batches"),supabase.rpc("get_admin_earnings_data")]);
     if(a.error)setError(a.error.message);else setAccess(a.data as Access);
     if(b.error)setError(current=>current||b.error.message);else setSummary(b.data as Summary);
     if(c.error)setError(current=>current||c.error.message);else setReviews((c.data||{batches:[]}) as ReviewPayload);
+    if(d.error)setError(current=>current||d.error.message);else setEarnings(d.data as EarningsSummary);
     setLoading(false);
   };
   useEffect(()=>{load()},[]);
@@ -38,6 +41,8 @@ export default function ManagePage(){
   const paymentPending=reviews.batches.filter(x=>x.status==="finance_accepted");
 
   const cards=[
+    {href:"/earnings",icon:<BarChart3/>,title:"Earnings",copy:"Authoritative ledger for earned, eligible, approved, and paid compensation across employees.",metric:`${earnings?.summary?.current_earnings||0} current earnings`},
+    {href:"/attention",icon:<AlertTriangle/>,title:"Needs Attention",copy:"Human-action queue for holds, mismatches, returned approvals, reconciliation issues, and other exceptions.",metric:`${earnings?.summary?.payment_exceptions||0} payment exceptions · ${earnings?.summary?.awaiting_approval||0} awaiting approval`},
     {href:"/submissions",icon:<ClipboardCheck/>,title:"Submissions",copy:"Review eligible compensation, submit whenever ready, and manage Namit/Scott handoffs.",metric:`${withNamit.length} with Namit · ${withScott.length} with Scott`},
     {href:"/payments",icon:<WalletCards/>,title:"Payments",copy:"Track Finance acceptance, payroll readiness, scheduled pay runs, and confirmed payments.",metric:`${summary?.counts?.ready_for_payroll||0} ready · ${money(summary?.amounts?.ready_for_payroll||0)}`},
     {href:"/workflow",icon:<ShieldCheck/>,title:"Workflow",copy:"Review effective approval chains and Finance handoff configuration without hardcoding people into product logic.",metric:"Sharon admin · Namit approval · Scott Finance"},
@@ -60,6 +65,6 @@ export default function ManagePage(){
 
     <section style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,marginBottom:22}}><div style={{background:"white",border:"1px solid #dfe6ee",borderRadius:14,padding:18}}><h2 style={{marginTop:0}}>Canonical workflow</h2>{["Sharon reviews and submits eligible compensation whenever it is ready.","Namit approves or returns the frozen submission snapshot.","Scott accepts the approved obligation for payment.","Payroll execution confirms the actual payment; acceptance alone is never Paid."].map((x,i)=><div key={x} style={{display:"flex",gap:10,margin:"11px 0"}}><b style={{width:25,height:25,borderRadius:20,display:"grid",placeItems:"center",background:"#eaf5ff",color:"#2095f3",flex:"0 0 auto"}}>{i+1}</b><span>{x}</span></div>)}</div><div style={{background:"white",border:"1px solid #dfe6ee",borderRadius:14,padding:18}}><h2 style={{marginTop:0}}>System controls</h2><div style={{display:"grid",gap:9}}><div><Users size={17}/> <b>System Admin</b><p style={{margin:"3px 0",color:"#647184"}}>Sharon retains unrestricted administrative authority, with overrides recorded in audit history.</p></div><div><History size={17}/> <b>Historical integrity</b><p style={{margin:"3px 0",color:"#647184"}}>Paid records are not silently rewritten; corrections become traceable adjustments.</p></div><div><Settings size={17}/> <b>Configuration over hardcoding</b><p style={{margin:"3px 0",color:"#647184"}}>Approval and Finance roles remain configurable for future personnel changes.</p></div></div></div></section>
 
-    <section style={{background:"#fff8e7",border:"1px solid #ead8a5",borderRadius:12,padding:14,display:"flex",gap:10,alignItems:"flex-start"}}><AlertTriangle size={19}/><div><b>Prototype cleanup in progress</b><p style={{margin:"3px 0 0",color:"#66593b"}}>The original single-page prototype still exists at the root URL while its remaining employee, plan, reconciliation, HubSpot, and settings features are moved into this consolidated route structure. Submissions, Payments, and Workflow are the authoritative workflow screens.</p></div></section>
+    <section style={{background:"#fff8e7",border:"1px solid #ead8a5",borderRadius:12,padding:14,display:"flex",gap:10,alignItems:"flex-start"}}><AlertTriangle size={19}/><div><b>Prototype cleanup in progress</b><p style={{margin:"3px 0 0",color:"#66593b"}}>The original single-page prototype still exists at the root URL while its remaining employee, plan, reconciliation, HubSpot, and settings features are moved into this consolidated route structure. Earnings, Needs Attention, Submissions, Payments, and Workflow are now authoritative management screens.</p></div></section>
   </div></main>
 }
