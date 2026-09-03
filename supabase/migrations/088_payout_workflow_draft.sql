@@ -1,121 +1,109 @@
--- DRAFT ONLY. Do not apply to production until the current schema is validated.
+-- DRAFT ONLY. Do not apply until validated against the active database and RLS/access model.
 -- Engagifii Variable Compensation Tracker
--- Monthly payout workflow: Sharon review/submission -> Namit approval -> Scott acceptance -> Scott payment confirmation.
--- Product decision: System Administrator is unrestricted application authority. Business workflow steps do not limit System Admin authority.
+-- Monthly operational workflow: Sharon/admin review -> Namit approval -> Scott acceptance -> Scott payment confirmation.
+-- Product decision: System Administrator has unrestricted application authority. Business workflow assignments do not restrict System Admin.
+-- Compensation lifecycle remains distinct: Earned -> Eligible -> Approved -> Paid.
 
 begin;
 
--- Keep operational workflow separate from the compensation lifecycle.
--- Compensation lifecycle remains Earned -> Eligible -> Approved -> Paid.
-do $$ begin
-  create type public.payout_batch_status as enum (
-    'draft',
-    'submitted',
-    'approved',
-    'accepted_for_payment',
-    'paid',
-    'returned',
-    'cancelled'
-  );
-exception when duplicate_object then null;
-end $$;
+-- The active schema already contains payroll_batches and payroll_payment_items.
+-- Extend those structures rather than creating a duplicate payout subsystem.
 
-do $$ begin
-  create type public.payout_action_type as enum (
-    'created',
-    'submitted',
-    'approved',
-    'returned',
-    'accepted_for_payment',
-    'payment_confirmed',
-    'reopened',
-    'cancelled',
-    'admin_override'
-  );
-exception when duplicate_object then null;
-end $$;
+alter table public.payroll_batches
+  add column if not exists submitted_by uuid references auth.users(id),
+  add column if not exists submitted_at timestamptz,
+  add column if not exists approved_by uuid references auth.users(id),
+  add column if not exists approved_at timestamptz,
+  add column if not exists finance_accepted_by uuid references auth.users(id),
+  add column if not exists finance_accepted_at timestamptz,
+  add column if not exists paid_confirmed_by uuid references auth.users(id),
+  add column if not exists paid_confirmed_at timestamptz,
+  add column if not exists returned_at timestamptz,
+  add column if not exists return_reason text,
+  add column if not exists submission_snapshot jsonb not null default '{}'::jsonb;
 
-create table if not exists public.payout_batches (
+alter table public.payroll_payment_items
+  add column if not exists source_snapshot jsonb not null default '{}'::jsonb,
+  add column if not exists included boolean not null default true,
+  add column if not exists exclusion_reason text;
+
+create table if not exists public.payroll_batch_activity (
   id uuid primary key default gen_random_uuid(),
-  period_start date not null,
-  period_end date not null,
-  label text not null,
-  status public.payout_batch_status not null default 'draft',
-  prepared_by uuid references auth.users(id),
-  submitted_by uuid references auth.users(id),
-  submitted_at timestamptz,
-  approved_by uuid references auth.users(id),
-  approved_at timestamptz,
-  finance_accepted_by uuid references auth.users(id),
-  finance_accepted_at timestamptz,
-  paid_confirmed_by uuid references auth.users(id),
-  paid_confirmed_at timestamptz,
-  payment_date date,
-  payment_reference text,
-  returned_at timestamptz,
-  return_reason text,
-  snapshot jsonb not null default '{}'::jsonb,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now(),
-  constraint payout_batch_period_valid check (period_end >= period_start)
-);
-
-create table if not exists public.payout_batch_items (
-  id uuid primary key default gen_random_uuid(),
-  payout_batch_id uuid not null references public.payout_batches(id) on delete cascade,
-  employee_id uuid,
-  earning_id uuid,
-  amount numeric(14,2) not null,
-  earning_status text,
-  eligibility_status text,
-  approval_status text,
-  payment_status text,
-  source_snapshot jsonb not null default '{}'::jsonb,
-  included boolean not null default true,
-  exclusion_reason text,
-  created_at timestamptz not null default now(),
-  unique (payout_batch_id, earning_id)
-);
-
-create table if not exists public.payout_batch_activity (
-  id uuid primary key default gen_random_uuid(),
-  payout_batch_id uuid not null references public.payout_batches(id) on delete cascade,
-  action public.payout_action_type not null,
+  payroll_batch_id uuid not null references public.payroll_batches(id) on delete cascade,
+  action text not null,
   actor_user_id uuid references auth.users(id),
-  from_status public.payout_batch_status,
-  to_status public.payout_batch_status,
+  from_status text,
+  to_status text,
   comment text,
   metadata jsonb not null default '{}'::jsonb,
-  created_at timestamptz not null default now()
+  created_at timestamptz not null default now(),
+  constraint payroll_batch_activity_action_check check (
+    action in (
+      'created',
+      'submitted',
+      'approved',
+      'returned',
+      'accepted_for_payment',
+      'payment_confirmed',
+      'reopened',
+      'cancelled',
+      'admin_override'
+    )
+  )
 );
 
-create index if not exists payout_batches_status_idx on public.payout_batches(status);
-create index if not exists payout_batches_period_idx on public.payout_batches(period_start, period_end);
-create index if not exists payout_batch_items_batch_idx on public.payout_batch_items(payout_batch_id);
-create index if not exists payout_batch_activity_batch_idx on public.payout_batch_activity(payout_batch_id, created_at);
+create index if not exists payroll_batch_activity_batch_idx
+  on public.payroll_batch_activity(payroll_batch_id, created_at);
 
--- Application-level workflow contract.
-comment on table public.payout_batches is
-'Monthly compensation payout batches. Operational workflow is Sharon/admin review -> Namit approval -> Scott Finance acceptance -> Scott payment confirmation. System administrators retain unrestricted authority.';
-comment on column public.payout_batches.snapshot is
-'Immutable-at-submission representation of the proposed payout so later HubSpot changes cannot silently alter what was approved.';
-comment on column public.payout_batch_items.source_snapshot is
-'Source facts, plan/rule version, formula inputs, calculated amount, eligibility evidence and other lineage captured for audit.';
+comment on table public.payroll_batch_activity is
+'Immutable operational history for monthly payout batches. Business flow is administrator submission, executive approval, Finance acceptance, then Finance payment confirmation. System Administrators may perform any action.';
 
--- This migration intentionally does not guess the existing roles/permissions table names.
--- When activated, the access migration must map system_administrator to every application permission,
--- including compensation review, approval, return, adjustment, payout acceptance, payment confirmation,
--- reopening, reconciliation, configuration, integration, and audit actions.
--- Namit and Scott receive only their business-role permissions; Sharon's System Admin authority supersedes workflow restrictions.
+comment on column public.payroll_batches.submission_snapshot is
+'Snapshot of the payout batch at submission so later CRM/source changes cannot silently alter what was approved.';
 
--- Transition contract for the UI/RPC layer:
--- draft -> submitted: compensation administrator/System Admin
--- submitted -> approved: executive approver (currently Namit) OR System Admin
--- submitted/approved -> returned: current business owner OR System Admin, reason required
--- approved -> accepted_for_payment: Finance (currently Scott) OR System Admin
--- accepted_for_payment -> paid: Finance (currently Scott) OR System Admin; payment_date required
--- any non-paid state -> reopened/corrected as permitted; paid history is never silently mutated
--- paid corrections create adjustments and preserve the original payment/activity record.
+comment on column public.payroll_payment_items.source_snapshot is
+'Source facts, plan/rule version, calculation inputs, calculated amount and eligibility evidence captured for audit.';
+
+-- Status contract for payroll_batches.status (text column already exists):
+-- draft
+-- submitted
+-- approved
+-- accepted_for_payment
+-- paid
+-- returned
+-- cancelled
+--
+-- Do not collapse operational status into compensation lifecycle status.
+-- An earning becomes Approved only when required authorization is complete.
+-- It becomes Paid only after payment is actually confirmed.
+
+-- Current configured business roles:
+-- Sharon / System Administrator: may review, submit, approve, return, accept, confirm payment,
+--   reopen, correct, configure, reconcile and administer all records.
+-- Namit / Executive Approver: approves or returns submitted compensation.
+-- Scott / Finance-Payroll: accepts approved compensation for payment and confirms actual payment.
+-- These are configuration values, not hardcoded permanent personnel rules.
+
+-- Existing workflow tables should remain authoritative for routing:
+-- employee_approval_workflow_versions
+-- employee_approval_chains
+-- employee_post_approval_steps
+-- approval_requests
+-- approval_actions
+--
+-- Recommended configuration:
+--   Approval chain: Namit, step type/level = executive approval.
+--   Post-approval step 1: Scott, step_type = finance_acceptance, required_for_payment = true.
+--   Post-approval step 2: Scott, step_type = payment_confirmation, required_for_payment = true,
+--                         requires_payment_details = true.
+-- Sharon's System Administrator authority supersedes ordinary routing restrictions.
+
+-- Security requirements before activation:
+-- 1. Enable RLS on payroll_batch_activity if exposed through the Data API.
+-- 2. Add explicit authenticated grants if the project has automatic Data API exposure disabled.
+-- 3. Policies must use effective application permissions/roles, not user-editable user_metadata.
+-- 4. UPDATE policies need SELECT + USING + WITH CHECK.
+-- 5. Paid history is never silently mutated; corrections create adjustments/activity records.
 
 rollback;
--- DRAFT ONLY: rollback keeps this file safe to inspect in SQL tooling without applying schema changes.
+-- DRAFT ONLY: rollback intentionally prevents this repository draft from changing schema when inspected manually.
