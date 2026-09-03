@@ -14,6 +14,7 @@ type WorkflowVersion={id:string;employee_id:string;workflow_name:string;status:s
 type ApprovalStep={id:string;workflow_version_id:string;employee_id:string;approval_order:number;step_name:string|null;approval_level:string;approver_employee_id:string|null;is_required:boolean};
 type PostStep={id:string;workflow_version_id:string;employee_id:string;stage_order:number;step_name:string;step_type:string;assignee_employee_id:string;is_required_for_payment:boolean;requires_payment_details:boolean};
 type PayrollBatch={id:string;batch_name:string;payroll_period_start:string|null;payroll_period_end:string|null;scheduled_payment_date:string|null;actual_payment_date:string|null;status:string;payment_reference:string|null;payment_method:string|null;created_at:string};
+type WorkflowPayload={employees:Employee[];workflow_versions:WorkflowVersion[];approval_steps:ApprovalStep[];post_steps:PostStep[];payroll_batches:PayrollBatch[]};
 
 function personName(id:string|null,employees:Map<string,Employee>){return id?employees.get(id)?.full_name||"Unassigned":"Unassigned"}
 
@@ -23,22 +24,14 @@ export default function WorkflowPage(){
   const load=async()=>{
     if(!supabase){setError("Supabase connection unavailable");setLoading(false);return}
     setLoading(true);setError("");
-    const [employeeResult,versionResult,approvalResult,postResult,batchResult]=await Promise.all([
-      supabase.from("employees").select("id,full_name,email").eq("is_active",true).order("full_name"),
-      supabase.from("employee_approval_workflow_versions").select("id,employee_id,workflow_name,status,effective_start_date,effective_end_date,notes").order("effective_start_date",{ascending:false}),
-      supabase.from("employee_approval_chains").select("id,workflow_version_id,employee_id,approval_order,step_name,approval_level,approver_employee_id,is_required").order("approval_order"),
-      supabase.from("employee_post_approval_steps").select("id,workflow_version_id,employee_id,stage_order,step_name,step_type,assignee_employee_id,is_required_for_payment,requires_payment_details").order("stage_order"),
-      supabase.from("payroll_batches").select("id,batch_name,payroll_period_start,payroll_period_end,scheduled_payment_date,actual_payment_date,status,payment_reference,payment_method,created_at").order("created_at",{ascending:false}).limit(12),
-    ]);
-    const firstError=employeeResult.error||versionResult.error||approvalResult.error||postResult.error||batchResult.error;
-    if(firstError)setError(firstError.message);
-    else{
-      setEmployees((employeeResult.data||[]) as Employee[]);
-      setVersions((versionResult.data||[]) as WorkflowVersion[]);
-      setApprovalSteps((approvalResult.data||[]) as ApprovalStep[]);
-      setPostSteps((postResult.data||[]) as PostStep[]);
-      setBatches((batchResult.data||[]) as PayrollBatch[]);
-    }
+    const{data,error:rpcError}=await supabase.rpc("get_workflow_management_data");
+    if(rpcError){setError(rpcError.message);setLoading(false);return}
+    const payload=(data||{}) as Partial<WorkflowPayload>;
+    setEmployees(payload.employees||[]);
+    setVersions(payload.workflow_versions||[]);
+    setApprovalSteps(payload.approval_steps||[]);
+    setPostSteps(payload.post_steps||[]);
+    setBatches(payload.payroll_batches||[]);
     setLoading(false);
   };
   useEffect(()=>{load()},[]);
