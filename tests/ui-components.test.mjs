@@ -20,14 +20,14 @@ after(async () => {
   await vite.close();
 });
 
-test("retains responsive and animated UI utilities", async () => {
+test("retains the responsive application layout contract", async () => {
   const css = await readFile(`${root}/app/globals.css`, "utf8");
-  assert.match(css, /--tw-enter-opacity/);
-  assert.match(css, /scroll-fade-reveal-b/);
-  assert.match(css, /mask-image:/);
-  assert.match(css, /tw-shimmer/);
+  assert.match(css, /@import "tailwindcss"/);
+  assert.match(css, /@import "tw-animate-css"/);
   assert.match(css, /@media\(max-width:1080px\)/);
   assert.match(css, /@media\(max-width:780px\)/);
+  assert.match(css, /@media\(max-width:500px\)/);
+  assert.match(css, /@keyframes menu-in/);
 });
 
 test("forwards progress semantics to the primitive", async () => {
