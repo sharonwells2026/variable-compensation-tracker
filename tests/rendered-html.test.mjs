@@ -17,6 +17,9 @@ test("defines the compensation tracker entry experience", async () => {
     /Engagifii variable compensation management and employee earnings portal\./i,
   );
   assert.match(page, /ENGAGIFII COMPENSATION/);
-  assert.match(page, /router\.replace\(management\?"\/manage":"\/me"\)/);
+  assert.match(page, /roles\.includes\("system_administrator"\).*router\.replace\("\/manage"\)/s);
+  assert.match(page, /roles\.includes\("finance_payroll"\).*router\.replace\("\/finance"\)/s);
+  assert.match(page, /roles\.includes\("executive_administrator"\).*router\.replace\("\/executive"\)/s);
+  assert.match(page, /router\.replace\("\/me"\)/);
   assert.doesNotMatch(layout + page, /codex-preview/i);
 });
