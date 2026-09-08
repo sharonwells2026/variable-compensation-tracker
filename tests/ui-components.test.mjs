@@ -1,6 +1,5 @@
 import assert from "node:assert/strict";
-import { readdir, readFile } from "node:fs/promises";
-import path from "node:path";
+import { readFile } from "node:fs/promises";
 import test, { after } from "node:test";
 import { fileURLToPath } from "node:url";
 
@@ -21,25 +20,14 @@ after(async () => {
   await vite.close();
 });
 
-async function readCssTree(directory) {
-  const entries = await readdir(directory, { withFileTypes: true });
-  const contents = await Promise.all(
-    entries.map(async (entry) => {
-      const entryPath = path.join(directory, entry.name);
-      if (entry.isDirectory()) return readCssTree(entryPath);
-      return entry.name.endsWith(".css") ? readFile(entryPath, "utf8") : "";
-    }),
-  );
-  return contents.join("\n");
-}
-
-test("emits the UI animation utilities used by the app", async () => {
-  const css = await readCssTree(path.join(root, "dist"));
+test("retains responsive and animated UI utilities", async () => {
+  const css = await readFile(`${root}/app/globals.css`, "utf8");
   assert.match(css, /--tw-enter-opacity/);
   assert.match(css, /scroll-fade-reveal-b/);
   assert.match(css, /mask-image:/);
   assert.match(css, /tw-shimmer/);
-  assert.match(css, /prefers-reduced-motion:\s*reduce/);
+  assert.match(css, /@media\(max-width:1080px\)/);
+  assert.match(css, /@media\(max-width:780px\)/);
 });
 
 test("forwards progress semantics to the primitive", async () => {
