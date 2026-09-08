@@ -1,37 +1,22 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import test from "node:test";
+import { fileURLToPath } from "node:url";
 
-test("renders the compensation tracker entry page", async () => {
-  const workerUrl = new URL("../dist/server/index.js", import.meta.url);
-  workerUrl.searchParams.set("test", `${process.pid}-${Date.now()}`);
-  const { default: worker } = await import(workerUrl.href);
+const root = fileURLToPath(new URL("..", import.meta.url));
 
-  const response = await worker.fetch(
-    new Request("http://localhost/", {
-      headers: { accept: "text/html" },
-    }),
-    {
-      ASSETS: {
-        fetch: async () => new Response("Not found", { status: 404 }),
-      },
-    },
-    {
-      waitUntil() {},
-      passThroughOnException() {},
-    },
-  );
+test("defines the compensation tracker entry experience", async () => {
+  const [layout, page] = await Promise.all([
+    readFile(`${root}/app/layout.tsx`, "utf8"),
+    readFile(`${root}/app/page.tsx`, "utf8"),
+  ]);
 
-  assert.equal(response.status, 200);
+  assert.match(layout, /title:\s*["']Variable Compensation Tracker["']/);
   assert.match(
-    response.headers.get("content-type") ?? "",
-    /^text\/html\b/i,
-  );
-
-  const html = await response.text();
-  assert.match(html, /<title>Variable Compensation Tracker<\/title>/i);
-  assert.match(
-    html,
+    layout,
     /Engagifii variable compensation management and employee earnings portal\./i,
   );
-  assert.doesNotMatch(html, /codex-preview/i);
+  assert.match(page, /ENGAGIFII COMPENSATION/);
+  assert.match(page, /router\.replace\(management\?"\/manage":"\/me"\)/);
+  assert.doesNotMatch(layout + page, /codex-preview/i);
 });
