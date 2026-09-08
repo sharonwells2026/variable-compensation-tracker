@@ -31,10 +31,11 @@
     "**/*.mts"
   ],
   "exclude": [
-  "node_modules",
-  "db/**/*",
-  "worker/**/*",
-  "build/**/*",
-  "vite.config.ts"
-]
+    "node_modules",
+    "db/**/*",
+    "worker/**/*",
+    "build/**/*",
+    "examples/**/*",
+    "vite.config.ts"
+  ]
 }
