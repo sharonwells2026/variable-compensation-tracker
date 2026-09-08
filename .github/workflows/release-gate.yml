@@ -2,7 +2,7 @@ name: Release Gate
 
 on:
   push:
-    branches: [main]
+    branches: [main, comp-tracker-work]
   pull_request:
     branches: [main]
 
