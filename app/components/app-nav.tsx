@@ -22,6 +22,7 @@ export default function AppNav(){
  const admin=roles.includes("system_administrator"),has=(p:string)=>admin||perms.includes(p);
  const items:Item[]=[
   {href:"/manage",label:"Control Center",icon:<Home size={16}/>,show:admin||has("workspace.view_administration")},
+  {href:"/attention",label:"Needs Attention",icon:<AlertTriangle size={16}/>,show:admin||has("workspace.view_administration")||has("earnings.view")||has("payments.view")},
   {href:"/me",label:"My Compensation",icon:<BriefcaseBusiness size={16}/>,show:has("workspace.view_self")},
   {href:"/submissions",label:"Approvals",icon:<ClipboardCheck size={16}/>,show:has("earnings.approve")||roles.includes("executive_administrator")},
   {href:"/payments",label:"Payments",icon:<WalletCards size={16}/>,show:has("payments.view")},
