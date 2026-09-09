@@ -3,7 +3,7 @@
 import {useEffect,useMemo,useState} from "react";
 import Link from "next/link";
 import {createClient} from "@supabase/supabase-js";
-import {ArrowLeft,Braces,Plus,Save,Trash2} from "lucide-react";
+import {ArrowLeft,Braces,Eye,ExternalLink,Plus,Save,Trash2} from "lucide-react";
 import ValueEditor,{RuleFieldOption} from "./value-editor";
 
 const supabase=createClient(
@@ -20,10 +20,13 @@ type Rule={id:string;key:string;name:string;objectType:string;property:string;op
 type RuleNode={id:string;type:"rule";ruleId:string;negate:boolean};
 type GroupNode={id:string;type:"group";op:"AND"|"OR";negate:boolean;children:(RuleNode|GroupNode)[]};
 type Node=RuleNode|GroupNode;
+type PreviewSample={hubspot_deal_id:string;deal_name:string;close_date:string|null;deal_type:string|null;amount:number|null;stage_id:string|null;owner_id:string|null;record_url:string|null};
+type Preview={supported:boolean;reason?:string;unsupported_predicates?:number;scanned_count?:number;matched_count?:number;sample_count?:number;samples?:PreviewSample[]};
 
 const uid=()=>Math.random().toString(36).slice(2,10);
 const box={background:"white",border:"1px solid #dfe6ee",borderRadius:12,padding:14} as const;
 const inputStyle={width:"100%",padding:"8px 9px",border:"1px solid #cad5df",borderRadius:7,background:"white"} as const;
+function money(v:number|null|undefined){return v==null?"—":new Intl.NumberFormat("en-US",{style:"currency",currency:"USD"}).format(Number(v))}
 
 function blankRule(n:number):Rule{
   return {id:uid(),key:`rule_${n}`,name:`Rule ${n}`,objectType:"deal",property:"dealtype",operator:"is",value:"",quantifier:"record",caseSensitive:false,includeNull:false};
@@ -84,6 +87,9 @@ export default function RuleBuilder(){
   const[root,setRoot]=useState<GroupNode>({id:"root",type:"group",op:"AND",negate:false,children:[]});
   const[message,setMessage]=useState("");
   const[error,setError]=useState("");
+  const[savedRuleSetId,setSavedRuleSetId]=useState<string|null>(null);
+  const[preview,setPreview]=useState<Preview|null>(null);
+  const[previewing,setPreviewing]=useState(false);
 
   useEffect(()=>{(async()=>{
     const p=await supabase.rpc("get_compensation_plan_admin_data");
@@ -103,8 +109,11 @@ export default function RuleBuilder(){
   })()},[]);
 
   const components=useMemo(()=>plans.flatMap(p=>p.versions.flatMap(v=>v.components.map(c=>({...c,plan:p.name,status:v.status})))),[plans]);
-  const updateRule=(id:string,patch:Partial<Rule>)=>setRules(rs=>rs.map(r=>r.id===id?{...r,...patch}:r));
+  const markDirty=()=>{setPreview(null);setSavedRuleSetId(null)};
+  const updateRule=(id:string,patch:Partial<Rule>)=>{markDirty();setRules(rs=>rs.map(r=>r.id===id?{...r,...patch}:r))};
+  const updateRoot=(next:GroupNode)=>{markDirty();setRoot(next)};
   const removeRule=(id:string)=>{
+    markDirty();
     setRules(rs=>rs.filter(r=>r.id!==id));
     const scrub=(n:GroupNode):GroupNode=>({...n,children:n.children.filter(c=>c.type!=="rule"||c.ruleId!==id).map(c=>c.type==="group"?scrub(c):c)});
     setRoot(scrub(root));
@@ -117,12 +126,7 @@ export default function RuleBuilder(){
     });
     return out;
   };
-  const save=async()=>{
-    setError("");setMessage("");
-    if(!component){setError("Choose a plan component.");return}
-    if(root.children.length===0){setError("Add at least one rule reference to the expression.");return}
-    const missing=rules.find(r=>!r.property||!r.operator);
-    if(missing){setError(`${missing.name} needs a field and operator.`);return}
+  const buildPayload=()=>{
     const predicates=rules.map(r=>{
       const field=fields.find(f=>f.object_type===r.objectType&&f.property_name===r.property);
       const op=ops.find(o=>o.operator_key===r.operator);
@@ -133,30 +137,55 @@ export default function RuleBuilder(){
         case_sensitive:r.caseSensitive,include_null_as_match:r.includeNull
       };
     });
-    const{error:e}=await supabase.rpc("save_comp_rule_set",{payload:{plan_component_id:component,name,purpose,evaluation_scope:"record",predicates,nodes:flatten(root)}});
-    if(e)setError(e.message);else setMessage("Rule set saved.");
+    return {plan_component_id:component,name,purpose,evaluation_scope:"record",predicates,nodes:flatten(root)};
+  };
+  const validate=()=>{
+    if(!component)return "Choose a plan component.";
+    if(root.children.length===0)return "Add at least one rule reference to the expression.";
+    const missing=rules.find(r=>!r.property||!r.operator);
+    if(missing)return `${missing.name} needs a field and operator.`;
+    return null;
+  };
+  const save=async()=>{
+    setError("");setMessage("");setPreview(null);
+    const problem=validate();if(problem){setError(problem);return null}
+    const{data:id,error:e}=await supabase.rpc("save_comp_rule_set",{payload:buildPayload()});
+    if(e){setError(e.message);return null}
+    const saved=String(id);
+    setSavedRuleSetId(saved);
+    setMessage("Rule set saved. You can now preview it against the HubSpot snapshot before using it in a plan.");
+    return saved;
+  };
+  const runPreview=async()=>{
+    setError("");setPreview(null);setPreviewing(true);
+    let id=savedRuleSetId;
+    if(!id)id=await save();
+    if(!id){setPreviewing(false);return}
+    const{data:result,error:e}=await supabase.rpc("preview_comp_rule_set",{target_rule_set_id:id,max_results:25});
+    if(e)setError(e.message);else setPreview((result||null) as Preview|null);
+    setPreviewing(false);
   };
 
   return <main style={{minHeight:"100vh",background:"#f5f7fa",padding:28,fontFamily:"Inter,Arial,sans-serif",color:"#051b34"}}>
     <div style={{maxWidth:1380,margin:"0 auto"}}>
       <Link href="/plans" style={{color:"#647184",fontWeight:700,textDecoration:"none"}}><ArrowLeft size={15}/> Plans</Link>
-      <div style={{display:"flex",justifyContent:"space-between",gap:16,alignItems:"start",margin:"12px 0 18px"}}>
+      <div style={{display:"flex",justifyContent:"space-between",gap:16,alignItems:"start",margin:"12px 0 18px",flexWrap:"wrap"}}>
         <div><small style={{fontWeight:900,color:"#2095f3",letterSpacing:1}}>PLAN RULE ENGINE</small><h1 style={{margin:"5px 0"}}>Rule builder</h1><p style={{margin:0,color:"#647184"}}>HubSpot-style field filters with reusable rules and nested AND / OR / NOT logic.</p></div>
-        <button type="button" onClick={save} style={{background:"#2095f3",color:"white",border:0,borderRadius:9,padding:"10px 14px",fontWeight:800}}><Save size={16}/> Save rule set</button>
+        <div style={{display:"flex",gap:8}}><button type="button" onClick={runPreview} disabled={previewing} style={{background:"white",color:"#051b34",border:"1px solid #bac8d5",borderRadius:9,padding:"10px 14px",fontWeight:800}}><Eye size={16}/> {previewing?"Previewing…":"Preview matches"}</button><button type="button" onClick={save} style={{background:"#2095f3",color:"white",border:0,borderRadius:9,padding:"10px 14px",fontWeight:800}}><Save size={16}/> Save rule set</button></div>
       </div>
       {error&&<div style={{...box,background:"#fff1f1",marginBottom:12}}>{error}</div>}
       {message&&<div style={{...box,background:"#edf9f2",marginBottom:12}}>{message}</div>}
 
       <section style={{...box,display:"grid",gridTemplateColumns:"2fr 1fr 1fr",gap:10,marginBottom:14}}>
-        <label>Plan component<select value={component} onChange={e=>setComponent(e.target.value)} style={{...inputStyle,display:"block",marginTop:5}}>{components.map(c=><option key={c.component_id} value={c.component_id}>{c.plan} · {c.name} ({c.status})</option>)}</select></label>
-        <label>Rule-set name<input value={name} onChange={e=>setName(e.target.value)} style={{...inputStyle,display:"block",marginTop:5}}/></label>
-        <label>Purpose<select value={purpose} onChange={e=>setPurpose(e.target.value)} style={{...inputStyle,display:"block",marginTop:5}}>{["qualification","rate_selection","calculation","eligibility","credit","payout","exception"].map(x=><option key={x}>{x}</option>)}</select></label>
+        <label>Plan component<select value={component} onChange={e=>{markDirty();setComponent(e.target.value)}} style={{...inputStyle,display:"block",marginTop:5}}>{components.map(c=><option key={c.component_id} value={c.component_id}>{c.plan} · {c.name} ({c.status})</option>)}</select></label>
+        <label>Rule-set name<input value={name} onChange={e=>{markDirty();setName(e.target.value)}} style={{...inputStyle,display:"block",marginTop:5}}/></label>
+        <label>Purpose<select value={purpose} onChange={e=>{markDirty();setPurpose(e.target.value)}} style={{...inputStyle,display:"block",marginTop:5}}>{["qualification","rate_selection","calculation","eligibility","credit","payout","exception"].map(x=><option key={x}>{x}</option>)}</select></label>
       </section>
 
       <section style={{...box,marginBottom:14}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:12}}>
           <div><h2 style={{margin:"0 0 3px"}}>1. Define reusable rules</h2><small style={{color:"#647184"}}>Select an object, HubSpot property, operator and value. Available operators and value controls adapt to the property type.</small></div>
-          <button type="button" onClick={()=>setRules(r=>[...r,blankRule(r.length+1)])}><Plus size={15}/> Add rule</button>
+          <button type="button" onClick={()=>{markDirty();setRules(r=>[...r,blankRule(r.length+1)])}}><Plus size={15}/> Add rule</button>
         </div>
         <div style={{display:"grid",gap:10,marginTop:12}}>
           {rules.map((r,i)=>{
@@ -188,14 +217,20 @@ export default function RuleBuilder(){
       <section style={{...box,marginBottom:14}}>
         <h2 style={{margin:"0 0 3px"}}>2. Build the logic expression</h2>
         <small style={{color:"#647184"}}>Groups can be nested indefinitely, switched between AND/OR, and negated. Reuse a rule anywhere in the expression.</small>
-        <GroupEditor node={root} rules={rules} onChange={setRoot} isRoot/>
+        <GroupEditor node={root} rules={rules} onChange={updateRoot} isRoot/>
       </section>
 
-      <section style={{...box,background:"#051b34",color:"white"}}>
+      <section style={{...box,background:"#051b34",color:"white",marginBottom:14}}>
         <div style={{display:"flex",gap:8,alignItems:"center"}}><Braces size={18}/><b>Expression preview</b></div>
         <code style={{display:"block",marginTop:10,whiteSpace:"pre-wrap",color:"#badefa"}}>{expressionText(root,rules)}</code>
         <p style={{margin:"10px 0 0",fontSize:13,color:"#c5d2df"}}>Supports expressions such as (Rule 1 AND Rule 2) OR (Rule 1 AND NOT Rule 3), including nested NOT groups.</p>
       </section>
+
+      {preview&&<section style={{...box,marginBottom:14}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"start",gap:12,flexWrap:"wrap"}}><div><h2 style={{margin:"0 0 3px"}}>3. Validate against HubSpot</h2><small style={{color:"#647184"}}>Read-only preview. It does not create earnings or change HubSpot.</small></div>{preview.supported&&<b style={{fontSize:20}}>{preview.matched_count||0} of {preview.scanned_count||0} deals match</b>}</div>
+        {!preview.supported?<div style={{marginTop:12,padding:12,background:"#fff8e8",border:"1px solid #ecd79a",borderRadius:9}}><b>Preview not yet available for this expression.</b><div style={{marginTop:4}}>{preview.reason}</div></div>:
+        <div style={{marginTop:12}}>{(preview.samples||[]).length===0?<div style={{color:"#647184"}}>No current HubSpot deals match this rule set.</div>:<div style={{display:"grid",gap:7}}>{(preview.samples||[]).map(s=><div key={s.hubspot_deal_id} style={{display:"grid",gridTemplateColumns:"minmax(260px,1.5fr) 120px 135px 120px",gap:10,alignItems:"center",padding:"9px 10px",border:"1px solid #e3e9ef",borderRadius:8}}><div><b>{s.deal_name}</b><small style={{display:"block",color:"#718096"}}>{s.deal_type||"—"} · {s.close_date||"No close date"}</small></div><span>{money(s.amount)}</span><code>{s.hubspot_deal_id}</code><span>{s.record_url?<a href={s.record_url} target="_blank" rel="noreferrer" style={{display:"inline-flex",gap:4,alignItems:"center"}}>Open HubSpot <ExternalLink size={13}/></a>:"—"}</span></div>)}</div>}</div>}
+      </section>}
     </div>
   </main>;
 }
