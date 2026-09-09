@@ -10,6 +10,7 @@ type Candidate={candidate_key:string;hubspot_deal_id:string;company_name:string;
 type Target={id:string;full_name:string;email:string};
 type Correction={id:string;candidate_key:string;hubspot_deal_id:string;current_employee_name?:string;requested_employee_name?:string;current_credit_percentage:number;requested_credit_percentage:number;reason:string;status:string;correction_path:"direct"|"reopen_required"|"paid_adjustment";resolution_notes?:string;earning_payment_status?:string;earning_paid_amount?:number};
 type Preview={valid:boolean;status:string;message?:string;original_employee_name?:string;original_credit_percentage?:number;original_earned_amount?:number;target_employee_name?:string;target_credit_percentage?:number;credited_basis?:number;target_component_name?:string;target_component_code?:string;rate?:number|null;corrected_earned_amount?:number;comp_period_name?:string;calculation_container_action?:string;validation?:{message?:string}};
+type ActionResult={data:any;error:any};
 const money=(v?:number)=>new Intl.NumberFormat("en-US",{style:"currency",currency:"USD"}).format(Number(v||0));
 const nice=(v?:string)=>String(v||"").replaceAll("_"," ").replace(/\b\w/g,m=>m.toUpperCase());
 const pathCopy=(p?:string)=>p==="paid_adjustment"?"Paid history protected · adjustment/reversal required":p==="reopen_required"?"Approval history protected · return/reopen required":"Pre-approval · direct controlled correction";
@@ -20,7 +21,7 @@ export default function CorrectionsPage(){
  useEffect(()=>{void load()},[]);useEffect(()=>setPreview(null),[selected,employee,credit]);
  const candidate=useMemo(()=>candidates.find(x=>x.candidate_key===selected),[candidates,selected]);
  const active=requests.filter(r=>["pending_review","approved_for_correction","ready_to_apply","adjustment_pending"].includes(r.status));
- const run=async(fn:()=>Promise<{data:any;error:any}>,ok:string)=>{setBusy(true);setError("");setSuccess("");const{data,error:e}=await fn();if(e)setError(e.message);else{setSuccess(typeof data?.status==="string"?`${ok} Status: ${nice(data.status)}.`:ok);await load()}setBusy(false)};
+ const run=async(fn:()=>PromiseLike<ActionResult>,ok:string)=>{setBusy(true);setError("");setSuccess("");const{data,error:e}=await fn();if(e)setError(e.message);else{setSuccess(typeof data?.status==="string"?`${ok} Status: ${nice(data.status)}.`:ok);await load()}setBusy(false)};
  const previewCorrection=()=>run(async()=>{const r=await supabase.rpc("preview_comp_credit_correction_replacement",{target_candidate_key:selected,target_employee_id:employee,target_credit_percentage:Number(credit)});if(!r.error)setPreview(r.data as Preview);return r},"Preview complete.");
  const submit=()=>run(()=>supabase.rpc("request_comp_credit_correction",{target_candidate_key:selected,target_employee_id:employee,target_credit_percentage:Number(credit),correction_reason:reason}),"Correction request created. No compensation record was changed.");
  const review=(id:string,decision:"approved_for_correction"|"rejected")=>run(()=>supabase.rpc("review_comp_credit_correction",{target_request_id:id,requested_decision:decision,review_notes:(notes[id]||"").trim()}),decision==="approved_for_correction"?"Correction approved for controlled processing.":"Correction rejected.");
