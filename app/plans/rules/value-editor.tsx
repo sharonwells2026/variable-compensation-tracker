@@ -2,13 +2,21 @@
 
 export type RuleFieldOption={value:string;label:string};
 export type RuleFieldMeta={data_type:string;options?:RuleFieldOption[];is_multi_value?:boolean};
-export type RuleOperatorMeta={value_arity:string};
+export type RuleOperatorMeta={operator_key?:string;value_arity:string};
 
 export default function ValueEditor({field,operator,value,onChange}:{field?:RuleFieldMeta;operator?:RuleOperatorMeta;value:string;onChange:(value:string)=>void}){
   const arity=operator?.value_arity||"single";
   const options=field?.options||[];
   const type=field?.data_type||"string";
+  const relativeDateOperator=operator?.operator_key==="within_last"||operator?.operator_key==="not_within_last";
   if(arity==="none") return <div style={{padding:"8px",color:"#718096"}}>No value needed</div>;
+
+  if(relativeDateOperator&&(type==="date"||type==="datetime")){
+    return <div style={{display:"flex",alignItems:"center",gap:6}}>
+      <input type="number" min="0" step="1" value={value} onChange={e=>onChange(e.target.value)} placeholder="30" style={{width:"100%"}}/>
+      <span style={{whiteSpace:"nowrap",color:"#647184",fontSize:12}}>days</span>
+    </div>;
+  }
 
   if(options.length>0&&arity==="single"){
     return <select value={value} onChange={e=>onChange(e.target.value)} style={{width:"100%"}}>
