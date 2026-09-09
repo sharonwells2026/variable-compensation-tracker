@@ -3,7 +3,7 @@
 import {useEffect,useMemo,useState} from "react";
 import Link from "next/link";
 import {createClient} from "@supabase/supabase-js";
-import {ArrowRight,Database,Settings2,ShieldCheck} from "lucide-react";
+import {ArrowRight,Database,RefreshCw,Settings2,ShieldCheck} from "lucide-react";
 
 const supabase=createClient(
  process.env.NEXT_PUBLIC_SUPABASE_URL||"https://bwdtbsqojtxfbeyfkang.supabase.co",
@@ -21,7 +21,8 @@ export default function SettingsPage(){
  const canMapping=has("settings.manage")||has("settings.hubspot_mapping.view")||has("settings.hubspot_mapping.edit");
  const canManage=has("settings.manage");
  const cards=useMemo(()=>[
-  canMapping?{href:"/settings/hubspot-mapping",icon:<Database size={22}/>,title:"HubSpot Compensation Mapping",text:"Choose which HubSpot objects, fields, and exact values compensation rules are allowed to use. Review source changes before they affect compensation."}:null,
+  canMapping?{href:"/settings/hubspot-integration",icon:<RefreshCw size={22}/>,title:"HubSpot Integration",text:"Re-sync HubSpot, choose which objects download records, and review what is newly available, changed, removed, or restricted."}:null,
+  canMapping?{href:"/settings/hubspot-mapping",icon:<Database size={22}/>,title:"HubSpot Compensation Mapping",text:"Choose which synchronized HubSpot objects, fields, and exact values compensation rules are allowed to use. Review source changes before they affect compensation."}:null,
   canManage?{href:"/users",icon:<ShieldCheck size={22}/>,title:"Roles & Permissions",text:"Manage application users, roles, and access to compensation administration."}:null,
  ].filter(Boolean) as {href:string;icon:React.ReactNode;title:string;text:string}[],[canMapping,canManage]);
  if(loading)return <main style={{padding:28,fontFamily:"Inter,Arial,sans-serif"}}>Loading settings…</main>;
