@@ -31,7 +31,7 @@ export default function AppNav(){
   {href:"/plans",label:"Plans",icon:<BarChart3 size={16}/>,show:has("plans.view")},
   {href:"/users",label:"Users & Permissions",icon:<ShieldCheck size={16}/>,show:has("users.manage")||has("permissions.view")},
   {href:"/audit",label:"Audit Log",icon:<History size={16}/>,show:has("audit.view_all")||has("audit.view_assigned")},
-  {href:"/settings",label:"Settings",icon:<Settings size={16}/>,show:has("settings.manage")},
+  {href:"/settings",label:"Settings",icon:<Settings size={16}/>,show:has("settings.manage")||has("settings.hubspot_mapping.view")||has("settings.hubspot_mapping.edit")},
  ].filter(x=>x.show);
  const primary=items.slice(0,5),secondary=items.slice(5);
  const active=(href:string)=>pathname===href||pathname.startsWith(`${href}/`);
