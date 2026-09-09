@@ -5,6 +5,7 @@ import Link from "next/link";
 import {createClient} from "@supabase/supabase-js";
 import {ArrowLeft,Braces,Eye,ExternalLink,Plus,Save,Trash2} from "lucide-react";
 import ValueEditor,{RuleFieldOption} from "./value-editor";
+import {hydrateExpression,hydrateRules,SavedRuleSet} from "./rule-hydration";
 
 const supabase=createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL||"https://bwdtbsqojtxfbeyfkang.supabase.co",
@@ -87,29 +88,52 @@ export default function RuleBuilder(){
   const[root,setRoot]=useState<GroupNode>({id:"root",type:"group",op:"AND",negate:false,children:[]});
   const[message,setMessage]=useState("");
   const[error,setError]=useState("");
+  const[editingRuleSetId,setEditingRuleSetId]=useState<string|null>(null);
   const[savedRuleSetId,setSavedRuleSetId]=useState<string|null>(null);
+  const[readOnly,setReadOnly]=useState(false);
+  const[versionLabel,setVersionLabel]=useState<number|null>(null);
+  const[loadingExisting,setLoadingExisting]=useState(false);
   const[preview,setPreview]=useState<Preview|null>(null);
   const[previewing,setPreviewing]=useState(false);
 
   useEffect(()=>{(async()=>{
-    const p=await supabase.rpc("get_compensation_plan_admin_data");
+    setError("");
+    const requested=typeof window!=="undefined"?new URLSearchParams(window.location.search).get("ruleSet"):null;
+    const[p,c]=await Promise.all([
+      supabase.rpc("get_compensation_plan_admin_data"),
+      supabase.rpc("get_comp_rule_builder_catalog",{target_plan_component_id:null})
+    ]);
     if(!p.error){
       const ps=(p.data?.plans||[]) as Plan[];
       setPlans(ps);
-      const first=ps.flatMap(x=>x.versions.flatMap(v=>v.components))[0];
-      if(first)setComponent(first.component_id);
+      if(!requested){const first=ps.flatMap(x=>x.versions.flatMap(v=>v.components))[0];if(first)setComponent(first.component_id);}
     }
-    const c=await supabase.rpc("get_comp_rule_builder_catalog",{target_plan_component_id:null});
     if(c.error)setError(c.error.message);
-    else{
-      setObjects(c.data?.objects||[]);
-      setFields(c.data?.fields||[]);
-      setOps(c.data?.operators||[]);
+    else{setObjects(c.data?.objects||[]);setFields(c.data?.fields||[]);setOps(c.data?.operators||[]);}
+
+    if(requested){
+      setLoadingExisting(true);
+      const loaded=await supabase.rpc("get_comp_rule_set_for_editing",{target_rule_set_id:requested});
+      if(loaded.error)setError(loaded.error.message);
+      else if(loaded.data){
+        const saved=loaded.data as SavedRuleSet;
+        setEditingRuleSetId(saved.id);
+        setSavedRuleSetId(saved.id);
+        setComponent(saved.plan_component_id);
+        setName(saved.name);
+        setPurpose(saved.purpose);
+        setRules(hydrateRules(saved) as Rule[]);
+        setRoot(hydrateExpression(saved) as GroupNode);
+        setReadOnly(!!saved.is_active);
+        setVersionLabel(saved.version);
+        setMessage(saved.is_active?`Version ${saved.version} is active and read-only. Create a new version from Rule Sets & Versions to change it.`:`Version ${saved.version} loaded for editing.`);
+      }
+      setLoadingExisting(false);
     }
   })()},[]);
 
   const components=useMemo(()=>plans.flatMap(p=>p.versions.flatMap(v=>v.components.map(c=>({...c,plan:p.name,status:v.status})))),[plans]);
-  const markDirty=()=>{setPreview(null);setSavedRuleSetId(null)};
+  const markDirty=()=>{if(readOnly)return;setPreview(null);setSavedRuleSetId(null)};
   const updateRule=(id:string,patch:Partial<Rule>)=>{markDirty();setRules(rs=>rs.map(r=>r.id===id?{...r,...patch}:r))};
   const updateRoot=(next:GroupNode)=>{markDirty();setRoot(next)};
   const removeRule=(id:string)=>{
@@ -137,7 +161,7 @@ export default function RuleBuilder(){
         case_sensitive:r.caseSensitive,include_null_as_match:r.includeNull
       };
     });
-    return {plan_component_id:component,name,purpose,evaluation_scope:"record",predicates,nodes:flatten(root)};
+    return {id:editingRuleSetId||undefined,plan_component_id:component,name,purpose,evaluation_scope:"record",predicates,nodes:flatten(root)};
   };
   const validate=()=>{
     if(!component)return "Choose a plan component.";
@@ -147,13 +171,15 @@ export default function RuleBuilder(){
     return null;
   };
   const save=async()=>{
+    if(readOnly){setError("Active rule versions are read-only. Create a new inactive version before editing.");return null}
     setError("");setMessage("");setPreview(null);
     const problem=validate();if(problem){setError(problem);return null}
     const{data:id,error:e}=await supabase.rpc("save_comp_rule_set",{payload:buildPayload()});
     if(e){setError(e.message);return null}
     const saved=String(id);
-    setSavedRuleSetId(saved);
-    setMessage("Rule set saved. You can now preview it against the HubSpot snapshot before using it in a plan.");
+    setEditingRuleSetId(saved);setSavedRuleSetId(saved);
+    if(typeof window!=="undefined")window.history.replaceState(null,"",`/plans/rules?ruleSet=${saved}`);
+    setMessage(`${versionLabel?`Version ${versionLabel} `:"Rule set "}saved. Preview it against HubSpot before activation.`);
     return saved;
   };
   const runPreview=async()=>{
@@ -170,14 +196,15 @@ export default function RuleBuilder(){
     <div style={{maxWidth:1380,margin:"0 auto"}}>
       <Link href="/plans" style={{color:"#647184",fontWeight:700,textDecoration:"none"}}><ArrowLeft size={15}/> Plans</Link>
       <div style={{display:"flex",justifyContent:"space-between",gap:16,alignItems:"start",margin:"12px 0 18px",flexWrap:"wrap"}}>
-        <div><small style={{fontWeight:900,color:"#2095f3",letterSpacing:1}}>PLAN RULE ENGINE</small><h1 style={{margin:"5px 0"}}>Rule builder</h1><p style={{margin:0,color:"#647184"}}>HubSpot-style field filters with reusable rules and nested AND / OR / NOT logic.</p></div>
-        <div style={{display:"flex",gap:8}}><button type="button" onClick={runPreview} disabled={previewing} style={{background:"white",color:"#051b34",border:"1px solid #bac8d5",borderRadius:9,padding:"10px 14px",fontWeight:800}}><Eye size={16}/> {previewing?"Previewing…":"Preview matches"}</button><button type="button" onClick={save} style={{background:"#2095f3",color:"white",border:0,borderRadius:9,padding:"10px 14px",fontWeight:800}}><Save size={16}/> Save rule set</button></div>
+        <div><small style={{fontWeight:900,color:"#2095f3",letterSpacing:1}}>PLAN RULE ENGINE</small><h1 style={{margin:"5px 0"}}>{editingRuleSetId?readOnly?"View rule version":"Edit rule version":"Rule builder"}</h1><p style={{margin:0,color:"#647184"}}>HubSpot-style field filters with reusable rules and nested AND / OR / NOT logic.{versionLabel?` Version ${versionLabel}.`:""}</p></div>
+        <div style={{display:"flex",gap:8}}><Link href="/plans/rules/manage" style={{background:"white",color:"#051b34",border:"1px solid #bac8d5",borderRadius:9,padding:"10px 14px",fontWeight:800,textDecoration:"none"}}>Rule versions</Link><button type="button" onClick={runPreview} disabled={previewing||loadingExisting} style={{background:"white",color:"#051b34",border:"1px solid #bac8d5",borderRadius:9,padding:"10px 14px",fontWeight:800}}><Eye size={16}/> {previewing?"Previewing…":"Preview matches"}</button><button type="button" onClick={save} disabled={readOnly||loadingExisting} style={{background:readOnly?"#a8b4c0":"#2095f3",color:"white",border:0,borderRadius:9,padding:"10px 14px",fontWeight:800,cursor:readOnly?"not-allowed":"pointer"}}><Save size={16}/> {readOnly?"Active version locked":"Save rule set"}</button></div>
       </div>
       {error&&<div style={{...box,background:"#fff1f1",marginBottom:12}}>{error}</div>}
-      {message&&<div style={{...box,background:"#edf9f2",marginBottom:12}}>{message}</div>}
+      {message&&<div style={{...box,background:readOnly?"#fff8e8":"#edf9f2",marginBottom:12}}>{message}</div>}
 
+      <fieldset disabled={readOnly||loadingExisting} style={{border:0,padding:0,margin:0,minWidth:0}}>
       <section style={{...box,display:"grid",gridTemplateColumns:"2fr 1fr 1fr",gap:10,marginBottom:14}}>
-        <label>Plan component<select value={component} onChange={e=>{markDirty();setComponent(e.target.value)}} style={{...inputStyle,display:"block",marginTop:5}}>{components.map(c=><option key={c.component_id} value={c.component_id}>{c.plan} · {c.name} ({c.status})</option>)}</select></label>
+        <label>Plan component<select disabled={!!editingRuleSetId} value={component} onChange={e=>{markDirty();setComponent(e.target.value)}} style={{...inputStyle,display:"block",marginTop:5}}>{components.map(c=><option key={c.component_id} value={c.component_id}>{c.plan} · {c.name} ({c.status})</option>)}</select></label>
         <label>Rule-set name<input value={name} onChange={e=>{markDirty();setName(e.target.value)}} style={{...inputStyle,display:"block",marginTop:5}}/></label>
         <label>Purpose<select value={purpose} onChange={e=>{markDirty();setPurpose(e.target.value)}} style={{...inputStyle,display:"block",marginTop:5}}>{["qualification","rate_selection","calculation","eligibility","credit","payout","exception"].map(x=><option key={x}>{x}</option>)}</select></label>
       </section>
@@ -219,6 +246,7 @@ export default function RuleBuilder(){
         <small style={{color:"#647184"}}>Groups can be nested indefinitely, switched between AND/OR, and negated. Reuse a rule anywhere in the expression.</small>
         <GroupEditor node={root} rules={rules} onChange={updateRoot} isRoot/>
       </section>
+      </fieldset>
 
       <section style={{...box,background:"#051b34",color:"white",marginBottom:14}}>
         <div style={{display:"flex",gap:8,alignItems:"center"}}><Braces size={18}/><b>Expression preview</b></div>
