@@ -4,7 +4,7 @@ import {useEffect,useState} from "react";
 import Link from "next/link";
 import {usePathname} from "next/navigation";
 import {createClient} from "@supabase/supabase-js";
-import {BarChart3,BriefcaseBusiness,ChevronDown,ClipboardCheck,History,Home,Menu,Settings,ShieldCheck,Users,WalletCards,X} from "lucide-react";
+import {AlertTriangle,BarChart3,BriefcaseBusiness,ChevronDown,ClipboardCheck,History,Home,Menu,Settings,ShieldCheck,Users,WalletCards,X} from "lucide-react";
 
 const supabaseUrl=process.env.NEXT_PUBLIC_SUPABASE_URL||"https://bwdtbsqojtxfbeyfkang.supabase.co";
 const supabaseKey=process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY||"sb_publishable_UEFOn-Rc0sczK9PwqVI91w_IAz95BcH";
@@ -26,6 +26,7 @@ export default function AppNav(){
   {href:"/submissions",label:"Approvals",icon:<ClipboardCheck size={16}/>,show:has("earnings.approve")||roles.includes("executive_administrator")},
   {href:"/payments",label:"Payments",icon:<WalletCards size={16}/>,show:has("payments.view")},
   {href:"/employees",label:"Employees",icon:<Users size={16}/>,show:has("users.manage")||has("users.act_as")},
+  {href:"/corrections",label:"Corrections",icon:<AlertTriangle size={16}/>,show:has("earnings.edit")||has("earnings.override")},
   {href:"/plans",label:"Plans",icon:<BarChart3 size={16}/>,show:has("plans.view")},
   {href:"/users",label:"Users & Permissions",icon:<ShieldCheck size={16}/>,show:has("users.manage")||has("permissions.view")},
   {href:"/audit",label:"Audit Log",icon:<History size={16}/>,show:has("audit.view_all")||has("audit.view_assigned")},
