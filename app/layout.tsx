@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import "./app-nav.css";
+import AppNav from "./components/app-nav";
 
 export const metadata: Metadata = {
   title: "Variable Compensation Tracker",
@@ -17,7 +19,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className="antialiased">{children}</body>
+      <body className="antialiased"><AppNav />{children}</body>
     </html>
   );
 }
