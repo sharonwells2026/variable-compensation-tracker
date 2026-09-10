@@ -19,7 +19,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className="antialiased"><AppNav />{children}</body>
+      <body className="antialiased"><AppNav /><div className="app-content">{children}</div></body>
     </html>
   );
 }
