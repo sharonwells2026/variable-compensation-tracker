@@ -4,7 +4,7 @@ import {FormEvent,useState} from "react";
 import Link from "next/link";
 import {useRouter} from "next/navigation";
 import {createClient} from "@supabase/supabase-js";
-import {ArrowLeft,Check,Save} from "lucide-react";
+import {ArrowLeft,Check,RotateCcw,Save} from "lucide-react";
 
 const supabase=createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL||"https://bwdtbsqojtxfbeyfkang.supabase.co",
@@ -12,13 +12,7 @@ const supabase=createClient(
 );
 
 function makePlanCode(value:string){
-  return value
-    .trim()
-    .toUpperCase()
-    .replace(/[^A-Z0-9]+/g,"_")
-    .replace(/^_+|_+$/g,"")
-    .replace(/_+/g,"_")
-    .slice(0,80);
+  return value.trim().toUpperCase().replace(/[^A-Z0-9]+/g,"-").replace(/^-+|-+$/g,"").replace(/-+/g,"-").slice(0,80);
 }
 
 export default function NewPlanPage(){
@@ -32,10 +26,8 @@ export default function NewPlanPage(){
  const[notes,setNotes]=useState("");
  const[saving,setSaving]=useState(false);
  const[error,setError]=useState("");
- const onNameChange=(value:string)=>{
-   setName(value);
-   if(!codeEdited)setCode(makePlanCode(value));
- };
+ const onNameChange=(value:string)=>{setName(value);if(!codeEdited)setCode(makePlanCode(value));};
+ const resetCode=()=>{setCodeEdited(false);setCode(makePlanCode(name));};
  const submit=async(e:FormEvent)=>{
    e.preventDefault();setError("");setSaving(true);
    const{data,error:rpcError}=await supabase.rpc("create_compensation_plan",{
@@ -46,26 +38,24 @@ export default function NewPlanPage(){
    setSaving(false);
    if(rpcError){setError(rpcError.message);return;}
    const versionId=data?.plan_version_id;
-   router.push(versionId?`/plans/component/new?version=${versionId}`:"/plans");
+   router.push(versionId?`/plans?version=${versionId}&created=1`:"/plans");
  };
  return <main className="plan-workspace"><div className="plan-page-shell">
-   <div className="plan-breadcrumb"><Link href="/plans"><ArrowLeft size={15}/>Plans & Rules</Link><span>/</span><span>New plan</span></div>
-   <header className="plan-page-header"><div><span className="plan-kicker">PLAN SETUP</span><h1>Create compensation plan</h1><p>Create the plan first. After you save it, we will take you directly to the first compensation earning to configure.</p></div></header>
-   <div className="plan-lifecycle-strip"><div><span>1</span><b>Plan basics</b><small>Name and dates</small></div><div><span>2</span><b>Compensation earnings</b><small>What the plan pays</small></div><div><span>3</span><b>Earned rules</b><small>What must happen to earn it</small></div><div><span>4</span><b>Eligible rules</b><small>What must happen before payment</small></div><div><span>5</span><b>People & review</b><small>Who it applies to and readiness</small></div></div>
+   <div className="plan-breadcrumb"><Link href="/plans"><ArrowLeft size={15}/>Plans</Link><span>/</span><span>New plan</span></div>
+   <header className="plan-page-header"><div><span className="plan-kicker">PLAN SETUP</span><h1>New compensation plan</h1><p>Two minutes of setup. You will add Earning Types on the next screen.</p><small><b>* Required</b></small></div></header>
    <form onSubmit={submit} className="plan-editor-card">
-     <div className="plan-editor-heading"><div><span className="plan-step-number">1</span><div><h2>Plan basics</h2><p>Create a draft first. Nothing becomes active until it is reviewed and activated.</p></div></div><span className="plan-status draft">Draft</span></div>
+     <div className="plan-editor-heading"><div><span className="plan-step-number">1</span><div><h2>Plan basics</h2><p>Name the plan and set when it begins. Nothing pays until the plan is activated.</p></div></div><span className="plan-status draft">Draft</span></div>
      {error&&<div className="plan-alert error">{error}</div>}
-     <p style={{fontSize:12,color:"#667085",marginTop:0}}><b>* Required field</b></p>
      <div className="plan-form-grid two">
-       <label>Plan name <span aria-hidden="true">*</span><input value={name} onChange={e=>onNameChange(e.target.value)} placeholder="e.g. Wes Morris 2027 Variable Compensation Plan" required/></label>
-       <label>Plan code <span aria-hidden="true">*</span><input value={code} onChange={e=>{setCodeEdited(true);setCode(makePlanCode(e.target.value))}} placeholder="Auto-generated from plan name" required/><small>Generated automatically from the plan name. You can edit it before saving.</small></label>
-       <label>Effective start date <span aria-hidden="true">*</span><input type="date" value={startDate} onChange={e=>setStartDate(e.target.value)} required/></label>
-       <label>Currency <span aria-hidden="true">*</span><select value={currency} onChange={e=>setCurrency(e.target.value)} required><option value="USD">USD</option></select></label>
+       <label>Plan name <span aria-hidden="true" style={{color:"#b42318"}}>*</span><input value={name} onChange={e=>onNameChange(e.target.value)} placeholder="e.g. Renewals Plan 2027" required/><small>Use the name employees and Finance will recognize.</small></label>
+       <label>Plan code <span aria-hidden="true" style={{color:"#b42318"}}>*</span><div style={{display:"flex",gap:8,alignItems:"center"}}><input value={code} onChange={e=>{setCodeEdited(true);setCode(makePlanCode(e.target.value))}} placeholder="Auto-generated from plan name" required/><span className="plan-status" style={{whiteSpace:"nowrap"}}>{codeEdited?"Edited":"Auto from name"}</span></div><small>{codeEdited?<button type="button" onClick={resetCode} style={{border:0,background:"transparent",padding:0,color:"#0879d5",fontWeight:700,cursor:"pointer",display:"inline-flex",gap:4,alignItems:"center"}}><RotateCcw size={12}/>Reset to auto</button>:"Change this only if another system expects a specific code."}</small></label>
+       <label>Effective start date <span aria-hidden="true" style={{color:"#b42318"}}>*</span><input type="date" value={startDate} onChange={e=>setStartDate(e.target.value)} required/><small>The first date this plan may create new earnings.</small></label>
+       <label>Currency <span aria-hidden="true" style={{color:"#b42318"}}>*</span><select value={currency} onChange={e=>setCurrency(e.target.value)} required><option value="USD">USD — U.S. Dollar</option></select></label>
      </div>
-     <label className="plan-full-field">Description<textarea value={description} onChange={e=>setDescription(e.target.value)} rows={3} placeholder="Plain-language description of who this plan is for and what it covers."/></label>
+     <label className="plan-full-field">Description<textarea value={description} onChange={e=>setDescription(e.target.value)} rows={3} placeholder="Who this plan is for and what it covers."/><small>Shown to administrators reviewing the plan.</small></label>
      <label className="plan-full-field">Internal notes<textarea value={notes} onChange={e=>setNotes(e.target.value)} rows={3} placeholder="Optional implementation or review notes."/></label>
-     <div className="plan-info-row"><Check size={16}/><span>After you create the draft, the next screen will be <b>Add compensation earning</b>. You will not have to figure out where to go next.</span></div>
-     <div className="plan-actions"><Link href="/plans" className="plan-button secondary">Cancel</Link><button disabled={saving} className="plan-button primary" type="submit"><Save size={16}/>{saving?"Creating…":"Create plan & continue"}</button></div>
+     <div className="plan-info-row"><Check size={16}/><span>After creation you will land on the plan itself, where a checklist shows exactly what is left: add Earning Types, review applicability, attach agreements, then activate.</span></div>
+     <div className="plan-actions"><Link href="/plans" className="plan-button secondary">Cancel</Link><button disabled={saving} className="plan-button primary" type="submit"><Save size={16}/>{saving?"Creating…":"Create plan"}</button></div>
    </form>
  </div></main>;
 }
