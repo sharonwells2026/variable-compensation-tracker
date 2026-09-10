@@ -15,7 +15,7 @@ const supabaseKey=process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY||"sb_publisha
 const supabase=supabaseUrl&&supabaseKey?createClient(supabaseUrl,supabaseKey):null;
 
 type Access={full_name?:string;email?:string;roles?:string[];permissions?:string[]};
-type Item={href:string;label:string;icon:React.ReactNode;show:boolean};
+type Item={href:string;label:string;icon:React.ReactNode;show:boolean;exact?:boolean};
 type Group={label:string;items:Item[]};
 
 export default function AppNav(){
@@ -23,7 +23,6 @@ export default function AppNav(){
   const[access,setAccess]=useState<Access|null>(null);
   const[collapsed,setCollapsed]=useState(false);
   const[mobileOpen,setMobileOpen]=useState(false);
-  const[refreshing,setRefreshing]=useState(false);
 
   useEffect(()=>{let live=true;(async()=>{if(!supabase)return;const{data}=await supabase.rpc("get_current_user_access");if(live&&data)setAccess(data as Access)})();return()=>{live=false}},[]);
   useEffect(()=>setMobileOpen(false),[pathname]);
@@ -48,7 +47,8 @@ export default function AppNav(){
       g("RECORDS",[
         {href:"/earnings",label:"Earnings & Credits",icon:<CreditCard size={18}/>,show:has("earnings.view")},
         {href:"/employees",label:"Employees",icon:<Users size={18}/>,show:has("users.manage")||has("users.act_as")},
-        {href:"/plans",label:"Plans & Rules",icon:<BarChart3 size={18}/>,show:has("plans.view")},
+        {href:"/plans",label:"Plans",icon:<BarChart3 size={18}/>,show:has("plans.view"),exact:true},
+        {href:"/plans/rules",label:"Rules & conditions",icon:<SlidersHorizontal size={18}/>,show:has("plans.edit")},
         {href:"/reconciliation",label:"Reconciliation",icon:<SlidersHorizontal size={18}/>,show:has("reconciliation.view")||has("reconciliation.manage")},
       ]),
       g("SYSTEM",[
@@ -62,7 +62,7 @@ export default function AppNav(){
   },[access]);
 
   if(pathname==="/"||!access)return null;
-  const active=(href:string)=>pathname===href||pathname.startsWith(`${href}/`);
+  const active=(item:Item)=>item.exact?pathname===item.href:(pathname===item.href||pathname.startsWith(`${item.href}/`));
   const initials=(access.full_name||access.email||"U").split(/\s+/).map(x=>x[0]).join("").slice(0,2).toUpperCase();
 
   const nav=<>
@@ -75,7 +75,7 @@ export default function AppNav(){
     <nav className="app-sidebar-nav">
       {groups.map(group=><div className="app-sidebar-group" key={group.label}>
         <div className="app-sidebar-group-label">{group.label}</div>
-        {group.items.map(i=><Link key={i.href} href={i.href} className={active(i.href)?"active":""} title={collapsed?i.label:undefined}>{i.icon}<span>{i.label}</span></Link>)}
+        {group.items.map(i=><Link key={i.href} href={i.href} className={active(i)?"active":""} title={collapsed?i.label:undefined}>{i.icon}<span>{i.label}</span></Link>)}
       </div>)}
     </nav>
     <div className="app-sidebar-user">
@@ -90,6 +90,6 @@ export default function AppNav(){
       <Link href="/manage" className="app-mobile-brand"><b>ENGAGIFII</b><span>Compensation</span></Link>
       <button onClick={()=>setMobileOpen(x=>!x)} aria-label="Open navigation">{mobileOpen?<X size={22}/>:<Menu size={22}/>}</button>
     </header>
-    {mobileOpen&&<div className="app-mobile-drawer"><div className="app-mobile-drawer-nav">{groups.map(group=><div key={group.label}><div className="app-sidebar-group-label">{group.label}</div>{group.items.map(i=><Link key={i.href} href={i.href} className={active(i.href)?"active":""}>{i.icon}<span>{i.label}</span></Link>)}</div>)}</div><div className="app-sidebar-user"><div className="app-user-avatar">{initials}</div><div className="app-user-copy"><b>{access.full_name||"Signed in"}</b><span>{access.email||""}</span></div></div></div>}
+    {mobileOpen&&<div className="app-mobile-drawer"><div className="app-mobile-drawer-nav">{groups.map(group=><div key={group.label}><div className="app-sidebar-group-label">{group.label}</div>{group.items.map(i=><Link key={i.href} href={i.href} className={active(i)?"active":""}>{i.icon}<span>{i.label}</span></Link>)}</div>)}</div><div className="app-sidebar-user"><div className="app-user-avatar">{initials}</div><div className="app-user-copy"><b>{access.full_name||"Signed in"}</b><span>{access.email||""}</span></div></div></div>}
   </>;
 }
