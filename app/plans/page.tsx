@@ -3,7 +3,7 @@
 import {useEffect,useMemo,useState} from "react";
 import Link from "next/link";
 import {createClient} from "@supabase/supabase-js";
-import {ChevronRight,Plus,RefreshCw,SlidersHorizontal} from "lucide-react";
+import {ChevronRight,Copy,Plus,RefreshCw,SlidersHorizontal} from "lucide-react";
 
 const supabase=createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL||"https://bwdtbsqojtxfbeyfkang.supabase.co",
@@ -53,7 +53,17 @@ export default function PlansPage(){
  const[loading,setLoading]=useState(true),[error,setError]=useState("");
  const[selectedPlanId,setSelectedPlanId]=useState("");
  const[selectedVersionId,setSelectedVersionId]=useState("");
- const load=async()=>{setLoading(true);setError("");const{data:result,error:rpcError}=await supabase.rpc("get_compensation_plan_admin_data");if(rpcError)setError(rpcError.message);else{const next=(result||{plans:[]}) as Payload;setData(next);setSelectedPlanId(current=>current&&next.plans.some(p=>p.plan_id===current)?current:next.plans[0]?.plan_id||"");}setLoading(false)};
+ const load=async()=>{
+   setLoading(true);setError("");
+   const{data:result,error:rpcError}=await supabase.rpc("get_compensation_plan_admin_data");
+   if(rpcError){setError(rpcError.message);setLoading(false);return;}
+   const next=(result||{plans:[]}) as Payload;setData(next);
+   const requested=typeof window!=="undefined"?new URLSearchParams(window.location.search).get("version"):null;
+   const requestedPlan=requested?next.plans.find(p=>p.versions.some(v=>v.version_id===requested)):null;
+   setSelectedPlanId(current=>requestedPlan?.plan_id||(current&&next.plans.some(p=>p.plan_id===current)?current:next.plans[0]?.plan_id||""));
+   if(requested)setSelectedVersionId(requested);
+   setLoading(false);
+ };
  useEffect(()=>{load()},[]);
  const selectedPlan=useMemo(()=>data.plans.find(p=>p.plan_id===selectedPlanId)||data.plans[0], [data.plans,selectedPlanId]);
  useEffect(()=>{if(selectedPlan)setSelectedVersionId(current=>current&&selectedPlan.versions.some(v=>v.version_id===current)?current:selectedPlan.versions[0]?.version_id||"")},[selectedPlan]);
@@ -66,7 +76,7 @@ export default function PlansPage(){
    <div className="plan-overview-grid">
      <aside className="plan-list-panel"><div className="plan-list-header"><h2>Compensation plans</h2><p>{data.plans.length} plan{data.plans.length===1?"":"s"} · select one to review</p></div><div className="plan-list">{data.plans.map(p=>{const active=p.versions.find(v=>v.status==="active"),draft=p.versions.find(v=>v.status==="draft");return <button key={p.plan_id} onClick={()=>setSelectedPlanId(p.plan_id)} className={selectedPlan?.plan_id===p.plan_id?"selected":""}><b>{p.name}</b><span>{p.plan_code}</span><span>{draft?`Draft v${draft.version_number}`:active?`Active v${active.version_number}`:"No current version"}</span></button>})}{!loading&&data.plans.length===0&&<div className="plan-empty" style={{margin:12}}>No plans yet.</div>}</div></aside>
      <section className="plan-detail-panel">{selectedPlan&&selectedVersion?<>
-       <div className="plan-detail-header"><div><h2>{selectedPlan.name}</h2><p>{selectedPlan.plan_code} · {label(selectedPlan.plan_type)}{selectedPlan.description?` · ${selectedPlan.description}`:""}</p></div><span className={`plan-status ${selectedVersion.status}`}>{label(selectedVersion.status)} v{selectedVersion.version_number}</span></div>
+       <div className="plan-detail-header"><div><h2>{selectedPlan.name}</h2><p>{selectedPlan.plan_code} · {label(selectedPlan.plan_type)}{selectedPlan.description?` · ${selectedPlan.description}`:""}</p></div><div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}><span className={`plan-status ${selectedVersion.status}`}>{label(selectedVersion.status)} v{selectedVersion.version_number}</span><Link className="plan-button secondary" href={`/plans/new-version?plan=${selectedPlan.plan_id}`}><Copy size={14}/>New draft version</Link></div></div>
        <div className="plan-version-tabs">{selectedPlan.versions.map(v=><button key={v.version_id} className={`plan-version-tab ${selectedVersion.version_id===v.version_id?"selected":""}`} onClick={()=>setSelectedVersionId(v.version_id)}>v{v.version_number} · {label(v.status)}</button>)}</div>
        <div className="plan-section"><div className="plan-section-title"><div><h3>Effective period & version</h3><p>Earnings keep the plan version they were calculated under.</p></div></div><div style={{display:"flex",gap:20,flexWrap:"wrap",fontSize:11,color:"#475467"}}><span><b>Starts:</b> {selectedVersion.effective_start_date}</span><span><b>Ends:</b> {selectedVersion.effective_end_date||"Open ended"}</span><span><b>Currency:</b> {selectedVersion.currency_code}</span></div></div>
        <div className="plan-section"><div className="plan-section-title"><div><h3>Compensation components</h3><p>Each component should make the Earned and Eligible distinction explicit.</p></div>{selectedVersion.status==="draft"&&<Link className="plan-button secondary" href={`/plans/component/new?version=${selectedVersion.version_id}`}><Plus size={14}/>Add component</Link>}</div>
