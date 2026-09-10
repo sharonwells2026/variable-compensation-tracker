@@ -14,11 +14,12 @@ const supabase=createClient(
 type Component={component_id:string;name:string;component_code:string;description:string|null;calculation_type:string|null;measurement_source:string|null;measurement_period:string|null;calculation_order:number;maximum_payout:number|null;is_active:boolean;payout_timing_method:string;measurement_label:string|null;additional_eligibility_waiting_days:number|null;allow_manager_payout_override:boolean;rule_configuration:any};
 type Version={version_id:string;version_number:number;status:string;components:Component[]};
 type Plan={plan_id:string;name:string;versions:Version[]};
-
+type RuleSetSummary={id:string;plan_component_id:string;name:string;purpose:string;version:number;is_active:boolean};
 type EligibilityMode="immediate"|"customer_payment"|"waiting_period"|"rule";
 
 function existingMode(c:Component|null):EligibilityMode{
  const e=c?.rule_configuration?.eligibility;
+ if(e?.business_concept==="customer_payment_received")return "customer_payment";
  if(e?.mode==="immediate"||e?.mode==="waiting_period"||e?.mode==="rule")return e.mode;
  const legacy=c?.rule_configuration?.eligibility_condition;
  if(legacy==="customer_payment_received"||legacy==="paid_stage_and_invoice_paid_date")return "customer_payment";
@@ -36,15 +37,42 @@ export default function ComponentEditor(){
  const[payoutTiming,setPayoutTiming]=useState("annual"),[managerOverride,setManagerOverride]=useState(true),[order,setOrder]=useState(1);
  const[eligibilityMode,setEligibilityMode]=useState<EligibilityMode>("immediate"),[waitingDays,setWaitingDays]=useState("0"),[eligibilityDescription,setEligibilityDescription]=useState("");
  const[ruleConfig,setRuleConfig]=useState<any>({});
+ const[ruleSets,setRuleSets]=useState<RuleSetSummary[]>([]),[selectedEligibilityRuleSet,setSelectedEligibilityRuleSet]=useState("");
  const[dirty,setDirty]=useState(false),[savedComponentId,setSavedComponentId]=useState(isNew?"":params.componentId);
 
- useEffect(()=>{(async()=>{setLoading(true);setError("");const q=typeof window!=="undefined"?new URLSearchParams(window.location.search):null;const requestedVersion=q?.get("version")||"";const{data,error:rpcError}=await supabase.rpc("get_compensation_plan_admin_data");if(rpcError){setError(rpcError.message);setLoading(false);return;}const ps=(data?.plans||[]) as Plan[];setPlans(ps);if(isNew){setVersionId(requestedVersion);setLoading(false);return;}for(const p of ps){for(const v of p.versions){const c=v.components.find(x=>x.component_id===params.componentId);if(c){setVersionId(v.version_id);setName(c.name);setCode(c.component_code);setDescription(c.description||"");setCalculationType(c.calculation_type||"percentage");setMeasurementSource(c.measurement_source||"amount");setMeasurementLabel(c.measurement_label||"");setMeasurementPeriod(c.measurement_period||"per_deal");setMaximumPayout(c.maximum_payout==null?"":String(c.maximum_payout));setPayoutTiming(c.payout_timing_method||"annual");setManagerOverride(c.allow_manager_payout_override!==false);setOrder(c.calculation_order||1);setRuleConfig(c.rule_configuration||{});setEligibilityMode(existingMode(c));const e=c.rule_configuration?.eligibility;setWaitingDays(String(e?.waiting_days??c.additional_eligibility_waiting_days??0));setEligibilityDescription(e?.description||"");}}}setLoading(false);})()},[isNew,params.componentId]);
+ useEffect(()=>{(async()=>{
+   setLoading(true);setError("");
+   const q=typeof window!=="undefined"?new URLSearchParams(window.location.search):null;
+   const requestedVersion=q?.get("version")||"";
+   const returnedRuleSet=q?.get("ruleSet")||"";
+   const returnedPurpose=q?.get("purpose")||"";
+   const returnedChoice=q?.get("eligibilityChoice") as EligibilityMode|null;
+   const{data,error:rpcError}=await supabase.rpc("get_compensation_plan_admin_data");
+   if(rpcError){setError(rpcError.message);setLoading(false);return;}
+   const ps=(data?.plans||[]) as Plan[];setPlans(ps);
+   if(isNew){setVersionId(requestedVersion);if(returnedChoice)setEligibilityMode(returnedChoice);setLoading(false);return;}
+   for(const p of ps){for(const v of p.versions){const c=v.components.find(x=>x.component_id===params.componentId);if(c){
+     setVersionId(v.version_id);setName(c.name);setCode(c.component_code);setDescription(c.description||"");setCalculationType(c.calculation_type||"percentage");setMeasurementSource(c.measurement_source||"amount");setMeasurementLabel(c.measurement_label||"");setMeasurementPeriod(c.measurement_period||"per_deal");setMaximumPayout(c.maximum_payout==null?"":String(c.maximum_payout));setPayoutTiming(c.payout_timing_method||"annual");setManagerOverride(c.allow_manager_payout_override!==false);setOrder(c.calculation_order||1);setRuleConfig(c.rule_configuration||{});
+     setEligibilityMode(returnedChoice||existingMode(c));const e=c.rule_configuration?.eligibility;setWaitingDays(String(e?.waiting_days??c.additional_eligibility_waiting_days??0));setEligibilityDescription(e?.description||"");setSelectedEligibilityRuleSet(returnedPurpose==="eligibility"&&returnedRuleSet?returnedRuleSet:e?.rule_set_id||"");
+   }}}
+   setLoading(false);
+ })()},[isNew,params.componentId]);
 
+ useEffect(()=>{if(!savedComponentId)return;(async()=>{const{data,error:catalogError}=await supabase.rpc("get_comp_rule_builder_catalog",{target_plan_component_id:savedComponentId});if(catalogError){setError(catalogError.message);return;}setRuleSets((data?.rule_sets||[]) as RuleSetSummary[]);})()},[savedComponentId]);
  useEffect(()=>{const f=(e:BeforeUnloadEvent)=>{if(!dirty)return;e.preventDefault();e.returnValue=""};window.addEventListener("beforeunload",f);return()=>window.removeEventListener("beforeunload",f)},[dirty]);
  const mark=()=>{setDirty(true);setMessage("")};
  const selectedPlan=useMemo(()=>plans.find(p=>p.versions.some(v=>v.version_id===versionId)),[plans,versionId]);
  const selectedVersion=selectedPlan?.versions.find(v=>v.version_id===versionId);
  const editable=selectedVersion?.status==="draft";
+ const eligibilityRuleSets=ruleSets.filter(r=>r.purpose==="eligibility");
+ const qualificationRuleSets=ruleSets.filter(r=>r.purpose==="qualification");
+ const ruleBuilderHref=(purpose:string,ruleSetId?:string)=>{
+   const returnTo=`/plans/component/${savedComponentId}?version=${versionId}${purpose==="eligibility"?`&eligibilityChoice=${eligibilityMode}`:""}`;
+   const q=new URLSearchParams();
+   if(ruleSetId)q.set("ruleSet",ruleSetId);else{q.set("component",savedComponentId);q.set("purpose",purpose);}
+   q.set("returnTo",returnTo);
+   return `/plans/rules?${q.toString()}`;
+ };
 
  const save=async(e:FormEvent)=>{
    e.preventDefault();if(!versionId){setError("A draft plan version is required.");return;}if(!editable){setError("Only draft plan versions can be edited.");return;}
@@ -57,14 +85,26 @@ export default function ComponentEditor(){
      selected_payout_timing_method:payoutTiming,selected_allow_manager_payout_override:managerOverride,selected_measurement_label:measurementLabel||null
    });
    if(componentError){setSaving(false);setError(componentError.message);return;}
-   const id=String(data?.component_id||savedComponentId);
-   setSavedComponentId(id);
+   const id=String(data?.component_id||savedComponentId);setSavedComponentId(id);
+
    if(eligibilityMode==="immediate"||eligibilityMode==="waiting_period"){
      const{error:eligError}=await supabase.rpc("save_compensation_plan_component_eligibility",{
        selected_component_id:id,selected_mode:eligibilityMode,selected_waiting_days:eligibilityMode==="waiting_period"?Number(waitingDays||0):null,selected_rule_set_id:null,selected_description:eligibilityDescription||null
      });
      if(eligError){setSaving(false);setError(`Component saved, but eligibility could not be saved: ${eligError.message}`);return;}
+   }else if(selectedEligibilityRuleSet){
+     const{error:eligError}=await supabase.rpc("save_compensation_plan_component_eligibility",{
+       selected_component_id:id,selected_mode:eligibilityMode,selected_waiting_days:null,selected_rule_set_id:selectedEligibilityRuleSet,selected_description:eligibilityDescription||null
+     });
+     if(eligError){setSaving(false);setError(`Component saved, but eligibility could not be saved: ${eligError.message}`);return;}
+   }else{
+     setDirty(false);setSaving(false);
+     const next=`/plans/component/${id}?version=${versionId}&eligibilityChoice=${eligibilityMode}`;
+     setMessage("The component is saved, but its Eligible condition is not complete yet. Build an eligibility rule and then attach it here.");
+     if(isNew)router.replace(next);
+     return;
    }
+
    setDirty(false);setSaving(false);setMessage("Draft component saved. Nothing has been activated.");
    if(isNew)router.replace(`/plans/component/${id}?version=${versionId}`);
  };
@@ -90,8 +130,8 @@ export default function ComponentEditor(){
      </div>
      <label className="plan-full-field">Description<textarea value={description} onChange={e=>{setDescription(e.target.value);mark()}} rows={2} disabled={!editable}/></label>
 
-     <div className="plan-editor-heading" style={{marginTop:28}}><div><span className="plan-step-number">2</span><div><h2>What makes it Earned</h2><p>The qualifying activity and business conditions are authored in Rule Builder.</p></div></div>{savedComponentId?<Link className="plan-button secondary" href={`/plans/rules?component=${savedComponentId}&purpose=qualification`}><ExternalLink size={14}/>Open Rule Builder</Link>:null}</div>
-     {!savedComponentId?<div className="plan-alert warning">Save this component first. Then Rule Builder can attach the Earned qualification rule to it.</div>:<div className="plan-info-row">A qualifying source record makes compensation <b>Earned</b>. Payment or another later condition belongs under Eligible.</div>}
+     <div className="plan-editor-heading" style={{marginTop:28}}><div><span className="plan-step-number">2</span><div><h2>What makes it Earned</h2><p>The qualifying activity and business conditions are authored in Rule Builder.</p></div></div>{savedComponentId?<Link className="plan-button secondary" href={qualificationRuleSets[0]?ruleBuilderHref("qualification",qualificationRuleSets[0].id):ruleBuilderHref("qualification")}><ExternalLink size={14}/>{qualificationRuleSets[0]?"Review Earned rule":"Build Earned rule"}</Link>:null}</div>
+     {!savedComponentId?<div className="plan-alert warning">Save this component first. Then Rule Builder can attach the Earned qualification rule to it.</div>:qualificationRuleSets.length?<div className="plan-info-row">{qualificationRuleSets.length} qualification rule version{qualificationRuleSets.length===1?"":"s"} exist for this component. A qualifying source record makes compensation <b>Earned</b>.</div>:<div className="plan-info-row">No Earned qualification rule exists yet. Build one before this component is ready for activation.</div>}
 
      <div className="plan-editor-heading" style={{marginTop:28}}><div><span className="plan-step-number">3</span><div><h2>What makes it Eligible</h2><p>Choose the additional condition, if any, that must be satisfied before the earning may move toward payment.</p></div></div></div>
      <div className="eligibility-choice-grid">
@@ -100,10 +140,15 @@ export default function ComponentEditor(){
          ["customer_payment","Customer payment received","Use synchronized payment evidence. The underlying HubSpot field/value is configured, not hardcoded."],
          ["waiting_period","A waiting period","Wait a defined number of days after the earning date."],
          ["rule","A custom condition","Build an eligibility rule using approved synchronized data."]
-       ] as [EligibilityMode,string,string][]).map(([value,title,copy])=><label key={value} className={`eligibility-choice ${eligibilityMode===value?"selected":""}`}><input type="radio" name="eligibility" checked={eligibilityMode===value} onChange={()=>{setEligibilityMode(value);mark()}} disabled={!editable}/><div><b>{title}</b><span>{copy}</span></div></label>)}
+       ] as [EligibilityMode,string,string][]).map(([value,title,copy])=><label key={value} className={`eligibility-choice ${eligibilityMode===value?"selected":""}`}><input type="radio" name="eligibility" checked={eligibilityMode===value} onChange={()=>{setEligibilityMode(value);if(value==="immediate"||value==="waiting_period")setSelectedEligibilityRuleSet("");mark()}} disabled={!editable}/><div><b>{title}</b><span>{copy}</span></div></label>)}
      </div>
      {eligibilityMode==="waiting_period"&&<div className="plan-form-grid two" style={{marginTop:14}}><label>Waiting days<input type="number" min={0} value={waitingDays} onChange={e=>{setWaitingDays(e.target.value);mark()}} disabled={!editable}/></label><label>Explanation shown to employee<input value={eligibilityDescription} onChange={e=>{setEligibilityDescription(e.target.value);mark()}} placeholder="e.g. Eligible 30 days after earning date" disabled={!editable}/></label></div>}
-     {(eligibilityMode==="customer_payment"||eligibilityMode==="rule")&&<div className="plan-alert warning" style={{marginTop:14}}>{savedComponentId?<>This selection requires an <b>eligibility</b> rule set. Build and preview it in Rule Builder, then return here to attach it. The UI will not silently hardcode a HubSpot stage or property. <Link href={`/plans/rules?component=${savedComponentId}&purpose=eligibility`}>Build eligibility rule</Link>.</>:"Save the component first, then build the eligibility rule."}</div>}
+     {(eligibilityMode==="customer_payment"||eligibilityMode==="rule")&&<div style={{marginTop:14}}>
+       {savedComponentId?<>
+         {eligibilityRuleSets.length>0&&<div className="plan-form-grid two"><label>Eligibility rule set<select value={selectedEligibilityRuleSet} onChange={e=>{setSelectedEligibilityRuleSet(e.target.value);mark()}} disabled={!editable}><option value="">Choose a rule set…</option>{eligibilityRuleSets.map(r=><option key={r.id} value={r.id}>{r.name} · v{r.version}{r.is_active?" · active":" · draft"}</option>)}</select></label><label>Employee-facing explanation<input value={eligibilityDescription} onChange={e=>{setEligibilityDescription(e.target.value);mark()}} placeholder={eligibilityMode==="customer_payment"?"Eligible when customer payment is recorded":"Explain the additional condition"} disabled={!editable}/></label></div>}
+         <div className="plan-alert warning" style={{marginTop:14}}>{selectedEligibilityRuleSet?<>This component will use the selected eligibility rule. <Link href={ruleBuilderHref("eligibility",selectedEligibilityRuleSet)}>Review or edit the rule</Link>.</>:<>Build and preview an <b>eligibility</b> rule, then return here to attach it. The UI will not silently hardcode a HubSpot stage or property. <Link href={ruleBuilderHref("eligibility")}>Build eligibility rule</Link>.</>}</div>
+       </>:<div className="plan-alert warning">Save the component first, then build the eligibility rule.</div>}
+     </div>}
 
      <div className="plan-editor-heading" style={{marginTop:28}}><div><span className="plan-step-number">4</span><div><h2>Who approves it</h2><p>Approval is inherited from the employee's effective-dated workflow in v1.</p></div></div></div>
      <div className="plan-info-row">The resolved approval chain will be shown when compensation is submitted. Components do not own separate approval chains in v1.</div>
