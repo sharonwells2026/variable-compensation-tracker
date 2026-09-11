@@ -91,7 +91,10 @@
 .plan-editor-heading h2{margin:0 0 4px;font-size:var(--eng-fs-section,15px);font-weight:700}
 .plan-editor-heading p{margin:0;color:var(--eng-ink-meta,#5b6b7f);font-size:var(--eng-fs-meta,12.5px)}
 
-/* ---------- status pill ---------- */
+/* ---------- status pill ----------
+ * Plan lifecycle is a PILL. Compensation lifecycle (Earned/Eligible/Approved/
+ * Paid) is a square chip elsewhere, so the two are never confused — "Approved"
+ * exists in both vocabularies. */
 .plan-status{display:inline-flex;align-items:center;gap:5px;
   border-radius:var(--eng-r-round,999px);padding:4px 9px;
   font-size:var(--eng-fs-micro,11px);font-weight:600;letter-spacing:.02em;
@@ -103,6 +106,7 @@
 .plan-status.retired,.plan-status.superseded,.plan-status.archived{
   background:var(--eng-bg,#f4f6f9);color:var(--eng-ink-muted,#31465a);
   border-color:var(--eng-border,#e3e8ee)}
+/* additive: rendered by existing code, previously unstyled */
 .plan-status.approved{background:var(--eng-blue-tint,#eaf4fe);
   color:var(--eng-blue-ink,#0b5c9e);border-color:var(--eng-blue-light,#badefa)}
 .plan-status.scheduled{background:var(--eng-scheduled-tint,#f2edfc);
@@ -212,6 +216,8 @@
 .plan-component-cell b{display:block;font-size:13px;color:var(--eng-ink,#051b34);line-height:1.4}
 .plan-component-cell span{display:block;font-size:11.5px;color:var(--eng-ink-meta,#5b6b7f);
   line-height:1.45;margin-top:3px}
+/* Earned and Eligible keep their distinct colours — the two lifecycle
+   transitions an administrator must be able to tell apart at a glance. */
 .plan-component-cell.earned small{color:var(--eng-blue-ink,#0b5c9e)}
 .plan-component-cell.eligible small{color:var(--eng-orange-ink,#8a5200)}
 .plan-edit-link{display:flex;align-items:center;justify-content:center;
