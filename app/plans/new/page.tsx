@@ -51,7 +51,7 @@ export default function NewPlanPage(){
      if(updateError){setSaving(false);setError(`The plan was created, but its effective end date could not be saved: ${updateError.message}`);return;}
    }
    setSaving(false);
-   router.push(versionId?`/plans?version=${versionId}&created=1`:"/plans");
+   router.push(versionId?`/plans/manage/${versionId}`:"/plans");
  };
  return <main className="plan-workspace"><div className="plan-page-shell">
    <div className="plan-breadcrumb"><Link href="/plans"><ArrowLeft size={15}/>Plans</Link><span>/</span><span>New plan</span></div>
@@ -68,8 +68,8 @@ export default function NewPlanPage(){
      </div>
      <label className="plan-full-field">Description<textarea value={description} onChange={e=>setDescription(e.target.value)} rows={3} placeholder="Who this plan is for and what it covers."/><small>Shown to administrators reviewing the plan.</small></label>
      <label className="plan-full-field">Internal notes<textarea value={notes} onChange={e=>setNotes(e.target.value)} rows={3} placeholder="Optional implementation or review notes."/></label>
-     <div className="plan-info-row"><Check size={16}/><span>After creation you will land on the plan itself, where the setup flow covers Earning Types, Earned conditions, payment conditions, people, agreements, approvals, and activation.</span></div>
-     <div className="plan-actions"><Link href="/plans" className="plan-button secondary">Cancel</Link><button disabled={saving} className="plan-button primary" type="submit"><Save size={16}/>{saving?"Creating…":"Create plan"}</button></div>
+     <div className="plan-info-row"><Check size={16}/><span>After creation you will continue into the plan setup workspace, where you can configure Earning Types, Earned conditions, payment conditions, people, agreements, approvals, and readiness before activation.</span></div>
+     <div className="plan-actions"><Link href="/plans" className="plan-button secondary">Cancel</Link><button disabled={saving} className="plan-button primary" type="submit"><Save size={16}/>{saving?"Creating…":"Create plan & continue"}</button></div>
    </form>
  </div></main>;
 }
