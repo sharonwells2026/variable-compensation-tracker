@@ -40,7 +40,7 @@ export default function AppNav(){
         {href:"/me",label:"My Compensation",icon:<BriefcaseBusiness size={18}/>,show:has("workspace.view_self")},
       ]),
       g("APPROVE & PAY",[
-        {href:"/submissions",label:"Approvals",icon:<ClipboardCheck size={18}/>,show:has("earnings.approve")||roles.includes("executive_administrator")},
+        {href:"/submissions",label:"Pending Actions",icon:<ClipboardCheck size={18}/>,show:has("earnings.approve")||roles.includes("executive_administrator")},
         {href:"/payments",label:"Payments",icon:<WalletCards size={18}/>,show:has("payments.view")},
         {href:"/corrections",label:"Corrections",icon:<RefreshCw size={18}/>,show:has("earnings.edit")||has("earnings.override")},
       ]),
