@@ -1,6 +1,10 @@
-import Link from "next/link";
+"use client";
 
-export default function EarningTypeLayout({children,params}:{children:React.ReactNode;params:{componentId:string}}){
+import Link from "next/link";
+import {useParams} from "next/navigation";
+
+export default function EarningTypeLayout({children}:{children:React.ReactNode}){
+  const params=useParams<{componentId:string}>();
   const id=params.componentId;
   if(id==="new")return <>{children}</>;
   const base=`/plans/component/${id}`;
