@@ -48,7 +48,6 @@ export default function AppNav(){
         {href:"/earnings",label:"Earnings & Credits",icon:<CreditCard size={18}/>,show:has("earnings.view")},
         {href:"/employees",label:"Employees",icon:<Users size={18}/>,show:has("users.manage")||has("users.act_as")},
         {href:"/plans",label:"Plans",icon:<BarChart3 size={18}/>,show:has("plans.view"),exact:true},
-        {href:"/plans/rules",label:"Rules & conditions",icon:<SlidersHorizontal size={18}/>,show:has("plans.edit")},
         {href:"/reconciliation",label:"Reconciliation",icon:<SlidersHorizontal size={18}/>,show:has("reconciliation.view")||has("reconciliation.manage")},
       ]),
       g("SYSTEM",[
