@@ -1,6 +1,10 @@
-import Link from "next/link";
+"use client";
 
-export default function ManagePlanLayout({children,params}:{children:React.ReactNode;params:{versionId:string}}){
+import Link from "next/link";
+import {useParams} from "next/navigation";
+
+export default function ManagePlanLayout({children}:{children:React.ReactNode}){
+  const params=useParams<{versionId:string}>();
   const base=`/plans/manage/${params.versionId}`;
   return <>
     <div style={{maxWidth:1180,margin:"18px auto 0",padding:"0 24px"}}>
