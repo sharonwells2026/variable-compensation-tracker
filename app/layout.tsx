@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
+import "./ui/tokens.css";
+import "./ui/ui.css";
 import "./globals.css";
 import "./app-nav.css";
+import "./page-shell.css";
 import "./plan-workspace.css";
 import AppNav from "./components/app-nav";
 
