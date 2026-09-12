@@ -10,10 +10,13 @@ export default function EarningTypeLayout({children}:{children:React.ReactNode})
   if(id==="new")return <>{children}</>;
   const versionId=search.get("version");
   return <>
-    <div style={{maxWidth:1280,margin:"18px auto 0",padding:"0 24px"}}>
-      <nav aria-label="Earning Type workspace" style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap",borderBottom:"1px solid #e3e8ef",paddingBottom:10}}>
-        {versionId&&<Link href={`/plans/manage/${versionId}`} className="plan-button secondary">Back to plan setup</Link>}
-        <span style={{fontSize:12,fontWeight:800,color:"#667085"}}>Payout, Earned conditions, and payment conditions are managed together on this Earning Type.</span>
+    <div className="plan-page-shell" style={{paddingTop:18,paddingBottom:0}}>
+      <nav aria-label="Earning Type workspace" style={{display:"flex",gap:10,alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",borderBottom:"1px solid var(--eng-border, #e3e8ef)",paddingBottom:10}}>
+        <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
+          {versionId&&<Link href={`/plans/manage/${versionId}`} className="plan-button secondary">Back to plan setup</Link>}
+          <span className="plan-kicker" style={{margin:0}}>EARNING TYPE WORKSPACE</span>
+        </div>
+        <span style={{fontSize:12,fontWeight:700,color:"var(--eng-text-secondary, #667085)"}}>Payout, Earned conditions, and payment conditions are managed together here.</span>
       </nav>
     </div>
     {children}
