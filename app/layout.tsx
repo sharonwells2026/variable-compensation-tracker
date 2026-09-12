@@ -1,6 +1,10 @@
 import type { Metadata } from "next";
+import "./ui/tokens.css";
+import "./ui/ui.css";
 import "./globals.css";
 import "./app-nav.css";
+import "./page-shell.css";
+import "./plan-workspace.css";
 import AppNav from "./components/app-nav";
 
 export const metadata: Metadata = {
@@ -19,7 +23,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className="antialiased"><AppNav />{children}</body>
+      <body className="antialiased"><AppNav /><div className="app-content">{children}</div></body>
     </html>
   );
 }
