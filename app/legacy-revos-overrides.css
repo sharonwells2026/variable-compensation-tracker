@@ -83,8 +83,55 @@
 .app-content>main:not(.eng-page):not(.plan-workspace) section[style*="background: white"],
 .app-content>main:not(.eng-page):not(.plan-workspace) div[style*="background: white"][style*="border"]{border-color:var(--eng-line)!important;box-shadow:var(--shadow-sm)}
 
+/* Plan rule builder + rule governance still use inline layout because the evaluator is deliberately
+   isolated from the active plan editor. Bring those surfaces into the RevOS visual system without
+   touching rule evaluation, saving, activation, or HubSpot catalog behavior. */
+.app-content>main[style*="#f6f8fb"],
+.app-content>main[style*="#f5f7fa"]{
+  background:var(--eng-bg)!important;
+  font-family:var(--font-sans)!important;
+  color:var(--eng-ink)!important;
+}
+.app-content>main[style*="#f6f8fb"]>div:first-child,
+.app-content>main[style*="#f5f7fa"]>div:first-child{
+  max-width:var(--eng-page-max)!important;
+}
+.app-content>main[style*="#f6f8fb"] h1,
+.app-content>main[style*="#f5f7fa"] h1{
+  font-size:var(--text-h1)!important;
+  line-height:var(--lh-tight)!important;
+  letter-spacing:-.02em!important;
+}
+.app-content>main[style*="#f6f8fb"] h2,
+.app-content>main[style*="#f5f7fa"] h2{color:var(--eng-ink-2)!important}
+.app-content>main[style*="#f6f8fb"] input,
+.app-content>main[style*="#f6f8fb"] select,
+.app-content>main[style*="#f6f8fb"] textarea,
+.app-content>main[style*="#f5f7fa"] input,
+.app-content>main[style*="#f5f7fa"] select,
+.app-content>main[style*="#f5f7fa"] textarea{
+  border-color:var(--eng-line)!important;
+  border-radius:var(--radius-sm)!important;
+  color:var(--eng-ink)!important;
+  background:var(--eng-surface)!important;
+}
+.app-content>main[style*="#f6f8fb"] button,
+.app-content>main[style*="#f5f7fa"] button{border-radius:var(--radius-sm)!important}
+.app-content>main[style*="#f6f8fb"] section[style*="background: white"],
+.app-content>main[style*="#f6f8fb"] div[style*="background: white"][style*="border"],
+.app-content>main[style*="#f5f7fa"] section[style*="background: white"],
+.app-content>main[style*="#f5f7fa"] article[style*="background: white"],
+.app-content>main[style*="#f5f7fa"] div[style*="background: white"][style*="border"]{
+  border-color:var(--eng-line)!important;
+  border-radius:var(--radius-lg)!important;
+  box-shadow:var(--shadow-sm)!important;
+}
+.app-content>main[style*="#f6f8fb"] code,
+.app-content>main[style*="#f5f7fa"] code{font-family:var(--font-mono)!important}
+
 @media(max-width:900px){
   .app-content>main:not(.eng-page):not(.plan-workspace){padding:18px 16px!important}
   .app-content main>div[style*="260px"]>aside nav{overflow-x:auto!important;flex-wrap:nowrap!important;padding-bottom:2px}
   .app-content main>div[style*="260px"]>aside nav button{white-space:nowrap!important}
+  .app-content>main[style*="#f6f8fb"],.app-content>main[style*="#f5f7fa"]{padding:18px 16px!important}
 }
