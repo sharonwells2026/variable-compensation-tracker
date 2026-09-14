@@ -23,6 +23,7 @@ export default function AppNav(){
   useEffect(()=>setMobileOpen(false),[pathname]);
   useEffect(()=>{try{if(window.localStorage.getItem("eng-nav-collapsed")==="1")setCollapsed(true)}catch{}},[]);
   const toggleCollapsed=()=>setCollapsed(x=>{const next=!x;try{window.localStorage.setItem("eng-nav-collapsed",next?"1":"0")}catch{}return next});
+  useEffect(()=>{const handle=()=>toggleCollapsed();window.addEventListener("revos-toggle-sidebar",handle);return()=>window.removeEventListener("revos-toggle-sidebar",handle)},[]);
 
   const groups=useMemo<Group[]>(()=>{
     if(!access)return[];
