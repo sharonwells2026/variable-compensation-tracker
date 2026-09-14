@@ -1,72 +1,70 @@
-/* Engagifii Compensation — design tokens
-   Phase 1. Canonical brand values, confirmed by the product owner.
-   Import once from app/layout.tsx BEFORE globals.css. Adds no rules of its own. */
-
+/* Engagifii RevOS design tokens.
+   Sourced from the Growth Analytics design-system export, with compatibility aliases
+   retained for the existing Compensation UI. */
 :root{
-  --eng-blue:#2095f3;
-  --eng-orange:#fc9800;
-  --eng-blue-light:#badefa;
-  --eng-navy:#051b34;
-  --eng-blue-strong:#0d7fd6;
-  --eng-blue-ink:#0b5c9e;
-  --eng-blue-tint:#eaf4fe;
-  --eng-blue-surface:#f5fbff;
-  --eng-orange-ink:#8a5200;
-  --eng-orange-deep:#7a4a00;
-  --eng-orange-tint:#fff5e6;
-  --eng-orange-border:#ffd89a;
-  --eng-bg:#f4f6f9;
+  --eng-blue:#2098f0;
+  --eng-blue-strong:#1483db;
+  --eng-blue-tint:#e7f4fd;
+  --eng-blue-border:#b8e0f8;
+  --eng-orange:#ff9700;
+  --eng-orange-strong:#e88500;
+  --eng-orange-tint:#fff3e0;
+  --eng-orange-border:#ffd9a1;
+  --eng-bg:#f5f6f8;
   --eng-surface:#ffffff;
-  --eng-surface-sunk:#fbfcfd;
-  --eng-surface-alt:#f7f9fb;
-  --eng-border:#e3e8ee;
-  --eng-border-soft:#eef1f5;
-  --eng-border-dashed:#f2f5f8;
-  --eng-hover:#f7f9fb;
-  --eng-ink:#051b34;
-  --eng-ink-strong:#1d3245;
-  --eng-ink-muted:#31465a;
-  --eng-ink-meta:#5b6b7f;
-  --eng-ink-faint:#5f6d80;
-  --eng-ink-disabled:#616f82;
-  --eng-success:#0f7a50;
-  --eng-success-ink:#0f6b47;
-  --eng-success-tint:#ecf8f2;
-  --eng-success-border:#bfe3d0;
-  --eng-danger:#b42318;
-  --eng-danger-ink:#912a20;
-  --eng-danger-tint:#fef3f2;
-  --eng-danger-border:#f6cfcb;
-  --eng-scheduled:#5b3fa8;
-  --eng-scheduled-tint:#f2edfc;
-  --eng-scheduled-border:#ddd2f5;
-  --eng-font:Roboto,system-ui,-apple-system,"Segoe UI",sans-serif;
-  --eng-font-mono:"Roboto Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
-  --eng-fs-page-title:22px;
-  --eng-fs-page-h1:28px;
-  --eng-fs-section:15px;
-  --eng-fs-body:13.5px;
-  --eng-fs-meta:12.5px;
-  --eng-fs-small:12px;
-  --eng-fs-micro:11px;
-  --eng-lh-body:1.55;
-  --eng-page-max:1280px;
-  --eng-s1:12px;
-  --eng-s2:16px;
-  --eng-s3:24px;
-  --eng-s4:32px;
-  --eng-r-chip:2px;
-  --eng-r-pill:999px;
-  --eng-r-control:8px;
-  --eng-r-card:12px;
-  --eng-r-panel:14px;
-  --eng-r-round:999px;
-  --eng-shadow-sm:0 1px 2px rgba(5,27,52,.06);
-  --eng-shadow-card:0 2px 10px rgba(5,27,52,.06);
-  --eng-shadow-pop:0 12px 30px rgba(5,27,52,.14);
-  --eng-shadow-bar:0 -6px 20px rgba(5,27,52,.07);
-  --eng-focus:0 0 0 3px rgba(32,149,243,.28);
-  --eng-control-h:36px;
-  --eng-control-h-lg:40px;
-  --eng-row-h:44px;
+  --eng-soft:#f7f8fa;
+  --eng-hover:#f1f3f6;
+  --eng-active:#e9ecf0;
+  --eng-line:#e6e8ec;
+  --eng-line-soft:#eef0f3;
+  --eng-ink:#0f1622;
+  --eng-ink-2:#16202e;
+  --eng-body:#48515f;
+  --eng-muted:#8a929c;
+  --eng-on-accent:#ffffff;
+  --eng-success:#1f8a5b;
+  --eng-success-tint:#e6f4ec;
+  --eng-warning:#c5821a;
+  --eng-warning-tint:#fbf0db;
+  --eng-danger:#cf4436;
+  --eng-danger-tint:#fbe8e6;
+  --eng-info:#2098f0;
+  --eng-info-tint:#e7f4fd;
+  --eng-slate:#64748b;
+  --eng-slate-tint:#eef0f3;
+
+  --font-sans:"Roboto",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --font-mono:"Roboto Mono","JetBrains Mono",ui-monospace,SFMono-Regular,monospace;
+  --fw-regular:400;--fw-medium:500;--fw-bold:700;--fw-black:900;
+  --text-display:30px;--text-h1:24px;--text-h2:18px;--text-h3:16px;
+  --text-lg:15px;--text-base:13.5px;--text-sm:12.5px;--text-xs:11px;--text-eyebrow:11px;
+  --lh-tight:1.15;--lh-snug:1.35;--lh-normal:1.55;
+  --tracking-display:-.4px;--tracking-eyebrow:.6px;
+
+  --space-0:0;--space-1:4px;--space-2:8px;--space-3:12px;--space-4:16px;--space-5:20px;--space-6:24px;--space-8:32px;--space-10:40px;--space-12:48px;
+  --radius-sm:6px;--radius-md:9px;--radius-lg:12px;--radius-xl:14px;--radius-pill:999px;
+  --shadow-sm:0 1px 2px rgba(15,22,34,.05);
+  --shadow-card:0 2px 12px rgba(15,22,34,.06);
+  --shadow-pop:0 12px 32px rgba(15,22,34,.14);
+  --focus-ring:0 0 0 3px var(--eng-blue-tint);
+  --accent-bar:linear-gradient(90deg,#5fb4f5,#2098f0);
+
+  --color-bg:var(--eng-bg);--surface-card:var(--eng-surface);--surface-soft:var(--eng-soft);
+  --border-default:var(--eng-line);--border-soft:var(--eng-line-soft);
+  --text-strong:var(--eng-ink);--text-heading:var(--eng-ink-2);--text-body:var(--eng-body);--text-muted:var(--eng-muted);
+  --accent:var(--eng-blue);--accent-strong:var(--eng-blue-strong);--accent-tint:var(--eng-blue-tint);
+
+  /* Compatibility aliases used by existing Compensation screens. */
+  --eng-blue-light:var(--eng-blue-border);--eng-navy:var(--eng-ink-2);--eng-blue-ink:var(--eng-blue-strong);--eng-blue-surface:#f5fbff;
+  --eng-orange-ink:#8a5200;--eng-orange-deep:#7a4a00;--eng-surface-sunk:#fbfcfd;--eng-surface-alt:var(--eng-soft);
+  --eng-border:var(--eng-line);--eng-border-soft:var(--eng-line-soft);--eng-border-dashed:var(--eng-line-soft);
+  --eng-ink-strong:var(--eng-ink-2);--eng-ink-muted:var(--eng-body);--eng-ink-meta:#667085;--eng-ink-faint:var(--eng-muted);--eng-ink-disabled:#98a2b3;
+  --eng-success-ink:#176b49;--eng-success-border:#bfe3d0;--eng-danger-ink:#a6372c;--eng-danger-border:#f1c6c1;
+  --eng-scheduled:#6554c0;--eng-scheduled-tint:#f1effb;--eng-scheduled-border:#d9d3f1;
+  --eng-font:var(--font-sans);--eng-font-mono:var(--font-mono);
+  --eng-fs-page-title:var(--text-h1);--eng-fs-page-h1:var(--text-display);--eng-fs-section:var(--text-h3);--eng-fs-body:var(--text-base);--eng-fs-meta:var(--text-sm);--eng-fs-small:12px;--eng-fs-micro:var(--text-xs);--eng-lh-body:var(--lh-normal);
+  --eng-page-max:1280px;--eng-s1:var(--space-3);--eng-s2:var(--space-4);--eng-s3:var(--space-6);--eng-s4:var(--space-8);
+  --eng-r-chip:2px;--eng-r-pill:var(--radius-pill);--eng-r-control:var(--radius-md);--eng-r-card:var(--radius-lg);--eng-r-panel:var(--radius-xl);--eng-r-round:var(--radius-pill);
+  --eng-shadow-sm:var(--shadow-sm);--eng-shadow-card:var(--shadow-card);--eng-shadow-pop:var(--shadow-pop);--eng-shadow-bar:0 -6px 20px rgba(15,22,34,.07);--eng-focus:var(--focus-ring);
+  --eng-control-h:38px;--eng-control-h-lg:42px;--eng-row-h:44px;
 }
