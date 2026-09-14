@@ -42,7 +42,7 @@ export default function AppNav(){
         {href:"/corrections",label:"Corrections",icon:<RotateCcw size={17}/>,show:has("earnings.edit")||has("earnings.override")},
       ]),
       g("RECORDS",[
-        {href:"/earnings",label:"Earnings & Credits",icon:<Coins size={17}/>,show:has("earnings.view")},
+        {href:"/earnings",label:"Earnings",icon:<Coins size={17}/>,show:has("earnings.view")},
         {href:"/employees",label:"Employees",icon:<Users size={17}/>,show:has("users.manage")||has("users.act_as")},
         {href:"/plans",label:"Plans",icon:<FileStack size={17}/>,show:has("plans.view"),exact:true},
         {href:"/reconciliation",label:"Reconciliation",icon:<Scale size={17}/>,show:has("reconciliation.view")||has("reconciliation.manage")},
@@ -50,7 +50,7 @@ export default function AppNav(){
       g("SYSTEM",[
         {href:"/workflow",label:"Workflow",icon:<Route size={17}/>,show:has("settings.manage")||has("plans.view")},
         {href:"/hubspot",label:"HubSpot Source Data",icon:<Plug size={17}/>,show:has("integrations.view")||has("integrations.configure")||has("hubspot.refresh")},
-        {href:"/users",label:"Users & Permissions",icon:<ShieldCheck size={17}/>,show:has("users.manage")||has("permissions.view")},
+        {href:"/users",label:"Users & Access",icon:<ShieldCheck size={17}/>,show:has("users.manage")||has("permissions.view")},
         {href:"/audit",label:"Audit Log",icon:<History size={17}/>,show:has("audit.view_all")||has("audit.view_assigned")},
         {href:"/settings",label:"Settings",icon:<Settings size={17}/>,show:has("settings.manage")||has("settings.hubspot_mapping.view")||has("settings.hubspot_mapping.edit")},
       ]),
