@@ -23,7 +23,7 @@ export default function PlanAgreementsPage(){
  const[loading,setLoading]=useState(true),[saving,setSaving]=useState(false),[error,setError]=useState(""),[message,setMessage]=useState("");
  const[file,setFile]=useState<File|null>(null),[scope,setScope]=useState<"employee"|"everyone">("employee"),[employeeId,setEmployeeId]=useState(""),[signedAt,setSignedAt]=useState(""),[notes,setNotes]=useState("");
  const plan=useMemo(()=>plans.find(p=>p.versions.some(v=>v.version_id===versionId)),[plans,versionId]);const version=plan?.versions.find(v=>v.version_id===versionId);const editable=version?.status==="draft";
- const assignedIds=useMemo(()=>new Set((editable?version?.draft_assignments:version?.assignments||[]||[]).map(a=>a.employee_id)),[editable,version]);
+ const assignedIds=useMemo(()=>new Set(((editable?version?.draft_assignments:version?.assignments)||[]).map(a=>a.employee_id)),[editable,version]);
  const assignedEmployees=useMemo(()=>employees.filter(e=>assignedIds.has(e.employee_id)),[employees,assignedIds]);
  const load=async()=>{setLoading(true);setError("");const[p,a]=await Promise.all([supabase.rpc("get_compensation_plan_admin_data"),supabase.rpc("get_comp_plan_agreements",{selected_plan_version_id:versionId})]);if(p.error)setError(p.error.message);else{setPlans((p.data?.plans||[]) as Plan[]);setEmployees((p.data?.employees||[]) as Employee[])}if(a.error)setError(x=>x||a.error!.message);else setAgreements((a.data||[]) as Agreement[]);setLoading(false)};
  useEffect(()=>{load()},[versionId]);
