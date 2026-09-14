@@ -11,7 +11,7 @@ import AppNav from "./components/app-nav";
 import RevOSTopBar from "./components/revos-topbar";
 
 export const metadata: Metadata = {
-  title: "Engagifii RevOS | Compensation",
+  title: "Variable Compensation Tracker",
   description: "Engagifii RevOS compensation management and employee earnings portal.",
   icons: {
     icon: "/favicon.svg",
