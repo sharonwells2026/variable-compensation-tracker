@@ -4,7 +4,7 @@ import {useEffect,useMemo,useState} from "react";
 import Link from "next/link";
 import {usePathname} from "next/navigation";
 import {createClient} from "@supabase/supabase-js";
-import {AlertTriangle,Banknote,ClipboardCheck,Coins,FileStack,History,LayoutDashboard,Menu,PanelLeftClose,PanelLeftOpen,Plug,Route,RotateCcw,Scale,Settings,ShieldCheck,Users,Wallet,X} from "lucide-react";
+import {AlertTriangle,Banknote,ClipboardCheck,Coins,FileStack,History,LayoutDashboard,Menu,PanelLeftClose,PanelLeftOpen,Plug,RotateCcw,Scale,Settings,ShieldCheck,Users,Wallet,X} from "lucide-react";
 
 const supabaseUrl=process.env.NEXT_PUBLIC_SUPABASE_URL||"https://bwdtbsqojtxfbeyfkang.supabase.co";
 const supabaseKey=process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY||"sb_publishable_UEFOn-Rc0sczK9PwqVI91w_IAz95BcH";
@@ -49,7 +49,6 @@ export default function AppNav(){
         {href:"/reconciliation",label:"Reconciliation",icon:<Scale size={17}/>,show:has("reconciliation.view")||has("reconciliation.manage")},
       ]),
       g("SYSTEM",[
-        {href:"/workflow",label:"Workflow",icon:<Route size={17}/>,show:has("settings.manage")||has("plans.view")},
         {href:"/hubspot",label:"HubSpot Source Data",icon:<Plug size={17}/>,show:has("integrations.view")||has("integrations.configure")||has("hubspot.refresh")},
         {href:"/users",label:"Users & Access",icon:<ShieldCheck size={17}/>,show:has("users.manage")||has("permissions.view")},
         {href:"/audit",label:"Audit Log",icon:<History size={17}/>,show:has("audit.view_all")||has("audit.view_assigned")},
