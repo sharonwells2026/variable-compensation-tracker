@@ -36,9 +36,9 @@
   --font-sans:"Roboto",system-ui,-apple-system,"Segoe UI",sans-serif;
   --font-mono:"Roboto Mono","JetBrains Mono",ui-monospace,SFMono-Regular,monospace;
   --fw-regular:400;--fw-medium:500;--fw-bold:700;--fw-black:900;
-  --text-display:30px;--text-h1:24px;--text-h2:18px;--text-h3:16px;
-  --text-lg:15px;--text-base:13.5px;--text-sm:12.5px;--text-xs:11px;--text-eyebrow:11px;
-  --lh-tight:1.15;--lh-snug:1.35;--lh-normal:1.55;
+  --text-display:25px;--text-h1:24px;--text-h2:18px;--text-h3:16px;
+  --text-lg:15px;--text-base:13px;--text-sm:12px;--text-xs:11px;--text-eyebrow:11px;
+  --lh-tight:1.15;--lh-snug:1.35;--lh-normal:1.5;
   --tracking-display:-.4px;--tracking-eyebrow:.6px;
 
   --space-0:0;--space-1:4px;--space-2:8px;--space-3:12px;--space-4:16px;--space-5:20px;--space-6:24px;--space-8:32px;--space-10:40px;--space-12:48px;
@@ -63,7 +63,7 @@
   --eng-scheduled:#6554c0;--eng-scheduled-tint:#f1effb;--eng-scheduled-border:#d9d3f1;
   --eng-font:var(--font-sans);--eng-font-mono:var(--font-mono);
   --eng-fs-page-title:var(--text-h1);--eng-fs-page-h1:var(--text-display);--eng-fs-section:var(--text-h3);--eng-fs-body:var(--text-base);--eng-fs-meta:var(--text-sm);--eng-fs-small:12px;--eng-fs-micro:var(--text-xs);--eng-lh-body:var(--lh-normal);
-  --eng-page-max:1280px;--eng-s1:var(--space-3);--eng-s2:var(--space-4);--eng-s3:var(--space-6);--eng-s4:var(--space-8);
+  --eng-page-max:1340px;--eng-s1:var(--space-3);--eng-s2:var(--space-4);--eng-s3:var(--space-6);--eng-s4:var(--space-8);
   --eng-r-chip:2px;--eng-r-pill:var(--radius-pill);--eng-r-control:var(--radius-md);--eng-r-card:var(--radius-lg);--eng-r-panel:var(--radius-xl);--eng-r-round:var(--radius-pill);
   --eng-shadow-sm:var(--shadow-sm);--eng-shadow-card:var(--shadow-card);--eng-shadow-pop:var(--shadow-pop);--eng-shadow-bar:0 -6px 20px rgba(15,22,34,.07);--eng-focus:var(--focus-ring);
   --eng-control-h:38px;--eng-control-h-lg:42px;--eng-row-h:44px;
