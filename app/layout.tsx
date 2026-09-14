@@ -12,7 +12,7 @@ import RevOSTopBar from "./components/revos-topbar";
 
 export const metadata: Metadata = {
   title: "Variable Compensation Tracker",
-  description: "Engagifii RevOS compensation management and employee earnings portal.",
+  description: "Engagifii variable compensation management and employee earnings portal.",
   icons: {
     icon: "/favicon.svg",
     shortcut: "/favicon.svg",
