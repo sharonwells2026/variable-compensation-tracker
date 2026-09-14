@@ -1,0 +1,63 @@
+/* Transitional RevOS convergence layer for routes that still carry legacy inline page chrome.
+   Deliberately presentation-only: no workflow or component behavior changes. */
+
+.app-content>main:not(.eng-page):not(.plan-workspace){
+  background:var(--eng-bg)!important;
+  color:var(--eng-ink)!important;
+  font-family:var(--font-sans)!important;
+  min-height:100vh;
+  padding:24px!important;
+}
+.app-content>main:not(.eng-page):not(.plan-workspace)>div:first-child{
+  max-width:var(--eng-page-max)!important;
+  margin-left:auto!important;
+  margin-right:auto!important;
+}
+.app-content>main:not(.eng-page):not(.plan-workspace) h1{
+  color:var(--eng-ink)!important;
+  font-size:var(--text-h1)!important;
+  line-height:var(--lh-tight)!important;
+  letter-spacing:-.02em!important;
+}
+.app-content>main:not(.eng-page):not(.plan-workspace) h2{
+  color:var(--eng-ink-2);
+}
+.app-content>main:not(.eng-page):not(.plan-workspace) p,
+.app-content>main:not(.eng-page):not(.plan-workspace) small{
+  font-family:var(--font-sans);
+}
+.app-content>main:not(.eng-page):not(.plan-workspace) input,
+.app-content>main:not(.eng-page):not(.plan-workspace) select,
+.app-content>main:not(.eng-page):not(.plan-workspace) textarea,
+.app-content>main:not(.eng-page):not(.plan-workspace) button{
+  font-family:var(--font-sans)!important;
+}
+.app-content>main:not(.eng-page):not(.plan-workspace) button:focus-visible,
+.app-content>main:not(.eng-page):not(.plan-workspace) a:focus-visible,
+.app-content>main:not(.eng-page):not(.plan-workspace) input:focus-visible,
+.app-content>main:not(.eng-page):not(.plan-workspace) select:focus-visible,
+.app-content>main:not(.eng-page):not(.plan-workspace) textarea:focus-visible{
+  outline:none!important;
+  box-shadow:var(--focus-ring)!important;
+}
+
+/* My Compensation previously rendered a second, dark 260px navigation rail inside the
+   global Compensation navigation. Collapse that internal rail while preserving its views. */
+.app-content main>div[style*="260px"]{
+  grid-template-columns:minmax(0,1fr)!important;
+}
+.app-content main>div[style*="260px"]>aside{
+  display:none!important;
+}
+
+/* Give common legacy card surfaces the same RevOS geometry without changing their content. */
+.app-content>main:not(.eng-page):not(.plan-workspace) article,
+.app-content>main:not(.eng-page):not(.plan-workspace) section[style*="background: white"],
+.app-content>main:not(.eng-page):not(.plan-workspace) div[style*="background: white"][style*="border"]{
+  border-color:var(--eng-line)!important;
+  box-shadow:var(--shadow-sm);
+}
+
+@media(max-width:900px){
+  .app-content>main:not(.eng-page):not(.plan-workspace){padding:18px 16px!important}
+}
