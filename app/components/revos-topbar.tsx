@@ -33,7 +33,7 @@ export default function RevOSTopBar(){
   if(pathname==="/")return null;
   return <header className="revos-topbar">
     <div className="revos-topbar__left">
-      <button className="revos-icon-button revos-topbar__menu" aria-label="Open module navigation"><Menu size={18}/></button>
+      <button className="revos-icon-button revos-topbar__menu" aria-label="Collapse or expand Compensation navigation" onClick={()=>window.dispatchEvent(new Event("revos-toggle-sidebar"))}><Menu size={18}/></button>
       <Link href="/manage" className="revos-brand" aria-label="Engagifii Compensation home"><img src="/engagifii-logo.png" alt="Engagifii"/></Link>
       <span className="revos-divider"/>
       <div className="revos-module-switcher">
