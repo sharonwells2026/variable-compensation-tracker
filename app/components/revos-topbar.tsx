@@ -3,7 +3,7 @@
 import {useEffect,useMemo,useState} from "react";
 import Link from "next/link";
 import {usePathname} from "next/navigation";
-import {BarChart3,ChevronDown,CircleDollarSign,FileSignature,Menu,Presentation,RefreshCw,BookOpen,Handshake,UsersRound} from "lucide-react";
+import {BarChart3,ChevronDown,CircleDollarSign,FileSignature,Menu,Presentation,RefreshCw,BookOpen,Handshake} from "lucide-react";
 import {createClient} from "@supabase/supabase-js";
 
 const supabase=createClient(
@@ -24,7 +24,7 @@ export default function RevOSTopBar(){
   const modules=useMemo<Module[]>(()=>[
     {id:"growth",label:"Growth Analytics",note:"Pipeline, forecast and growth performance",status:growthUrl?"active":"soon",href:growthUrl||undefined,icon:<BarChart3 size={16}/>},
     {id:"meeting",label:"Sales Meeting Hub",note:"QDCs, demos and meeting outcomes",status:"soon",icon:<Handshake size={16}/>},
-    {id:"compensation",label:"Compensation",note:"Quota, commission and plan attainment",status:"pilot",href:"/manage",icon:<CircleDollarSign size={16}/>},
+    {id:"compensation",label:"Compensation",note:"Plans, earnings, approvals and payments",status:"pilot",href:"/manage",icon:<CircleDollarSign size={16}/>},
     {id:"cpq",label:"Proposals & CPQ",note:"Quoting, proposals and approvals",status:"soon",icon:<FileSignature size={16}/>},
     {id:"subscriptions",label:"Subscriptions & Expansion",note:"Renewals, dues and installed-base expansion",status:"soon",icon:<RefreshCw size={16}/>},
     {id:"content",label:"Playbooks & Content",note:"Sales plays, enablement and collateral",status:"soon",icon:<BookOpen size={16}/>},
