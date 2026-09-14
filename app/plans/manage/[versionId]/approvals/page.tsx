@@ -62,7 +62,7 @@ export default function PlanApprovalsPage(){
     const{error:e}=await supabase.rpc("save_comp_plan_approval_configuration",{selected_plan_version_id:params.versionId,selected_steps:payload});
     setSaving(false);
     if(e){setError(e.message);return}
-    setMessage(payload.length?"Plan approval requirements saved.":"This plan has no approval steps configured.");
+    setMessage(payload.length?"Plan approval requirements saved.":"Approval steps cleared. Add at least one required approval step before this plan can pass readiness and be approved.");
     await load();
   };
 
@@ -72,8 +72,8 @@ export default function PlanApprovalsPage(){
     <header className="plan-page-header"><div><span className="plan-kicker">PLAN APPROVALS</span><h1>{plan?.name||"Compensation plan"}</h1><p>Define who must approve compensation submitted under this plan. Approval requirements belong to the plan, while each employee's submissions retain their own status and history.</p></div>{version&&<span className={`plan-status ${version.status}`}>{version.status} v{version.version_number}</span>}</header>
     {error&&<div className="plan-alert error">{error}</div>}{message&&<div className="plan-info-row">{message}</div>}
     <section className="plan-section">
-      <div className="plan-section-title"><div><h3>Approval sequence</h3><p>Steps run in order. A backup approver is optional. You can leave the list empty only if this plan truly requires no approval.</p></div>{editable&&<button type="button" className="plan-button secondary" onClick={add}><Plus size={14}/>Add approval step</button>}</div>
-      {!steps.length&&<div className="plan-empty">No approval steps configured for this plan yet.</div>}
+      <div className="plan-section-title"><div><h3>Approval sequence</h3><p>Steps run in order. A backup approver is optional. At least one required approval step must be configured before the plan can pass readiness and be approved.</p></div>{editable&&<button type="button" className="plan-button secondary" onClick={add}><Plus size={14}/>Add approval step</button>}</div>
+      {!steps.length&&<div className="plan-empty">No approval steps configured yet. Add at least one required approval step to make this plan ready for approval.</div>}
       {steps.map((s,i)=><div key={s.id||i} style={{display:"grid",gridTemplateColumns:"48px minmax(180px,1fr) minmax(220px,1fr) minmax(220px,1fr) auto",gap:12,alignItems:"end",borderTop:"1px solid #eef1f4",padding:"14px 0"}}>
         <div style={{fontWeight:800,fontSize:18,textAlign:"center",paddingBottom:10}}>{i+1}</div>
         <label>Step name<input value={s.step_name} disabled={!editable} onChange={e=>change(i,{step_name:e.target.value})}/></label>
