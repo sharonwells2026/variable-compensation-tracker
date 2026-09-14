@@ -19,44 +19,52 @@
   line-height:var(--lh-tight)!important;
   letter-spacing:-.02em!important;
 }
-.app-content>main:not(.eng-page):not(.plan-workspace) h2{
-  color:var(--eng-ink-2);
-}
+.app-content>main:not(.eng-page):not(.plan-workspace) h2{color:var(--eng-ink-2)}
 .app-content>main:not(.eng-page):not(.plan-workspace) p,
-.app-content>main:not(.eng-page):not(.plan-workspace) small{
-  font-family:var(--font-sans);
-}
+.app-content>main:not(.eng-page):not(.plan-workspace) small{font-family:var(--font-sans)}
 .app-content>main:not(.eng-page):not(.plan-workspace) input,
 .app-content>main:not(.eng-page):not(.plan-workspace) select,
 .app-content>main:not(.eng-page):not(.plan-workspace) textarea,
-.app-content>main:not(.eng-page):not(.plan-workspace) button{
-  font-family:var(--font-sans)!important;
-}
+.app-content>main:not(.eng-page):not(.plan-workspace) button{font-family:var(--font-sans)!important}
 .app-content>main:not(.eng-page):not(.plan-workspace) button:focus-visible,
 .app-content>main:not(.eng-page):not(.plan-workspace) a:focus-visible,
 .app-content>main:not(.eng-page):not(.plan-workspace) input:focus-visible,
 .app-content>main:not(.eng-page):not(.plan-workspace) select:focus-visible,
-.app-content>main:not(.eng-page):not(.plan-workspace) textarea:focus-visible{
-  outline:none!important;
-  box-shadow:var(--focus-ring)!important;
-}
+.app-content>main:not(.eng-page):not(.plan-workspace) textarea:focus-visible{outline:none!important;box-shadow:var(--focus-ring)!important}
 
-/* My Compensation previously rendered a second, dark 260px navigation rail inside the
-   global Compensation navigation. Collapse that internal rail while preserving its views. */
-.app-content main>div[style*="260px"]{
-  grid-template-columns:minmax(0,1fr)!important;
-}
+/* My Compensation used a second dark application sidebar. Keep its six useful view controls,
+   but convert the rail into a local horizontal sub-navigation below the RevOS shell. */
+.app-content main>div[style*="260px"]{grid-template-columns:minmax(0,1fr)!important;gap:0!important}
 .app-content main>div[style*="260px"]>aside{
-  display:none!important;
+  position:static!important;
+  top:auto!important;
+  height:auto!important;
+  padding:12px 16px!important;
+  background:var(--eng-surface)!important;
+  color:var(--eng-ink)!important;
+  border:1px solid var(--eng-line)!important;
+  border-radius:var(--radius-lg)!important;
+  display:block!important;
+  margin-bottom:14px!important;
 }
+.app-content main>div[style*="260px"]>aside>div:first-child{color:var(--eng-blue)!important}
+.app-content main>div[style*="260px"]>aside nav{display:flex!important;gap:5px!important;flex-wrap:wrap!important;margin-top:10px}
+.app-content main>div[style*="260px"]>aside nav button{
+  width:auto!important;
+  color:var(--eng-body)!important;
+  background:var(--eng-soft)!important;
+  border:1px solid var(--eng-line)!important;
+  padding:8px 10px!important;
+}
+.app-content main>div[style*="260px"]>aside nav button:hover{background:var(--eng-hover)!important}
+.app-content main>div[style*="260px"]>aside nav button[style*="18, 54, 87"],
+.app-content main>div[style*="260px"]>aside nav button[style*="#123657"]{background:var(--eng-blue-tint)!important;color:var(--eng-blue-strong)!important;border-color:var(--eng-blue-border)!important}
+.app-content main>div[style*="260px"]>aside>div:last-child{margin-top:10px!important;border-top:1px solid var(--eng-line)!important;padding-top:10px!important}
 
 /* Give common legacy card surfaces the same RevOS geometry without changing their content. */
 .app-content>main:not(.eng-page):not(.plan-workspace) article,
 .app-content>main:not(.eng-page):not(.plan-workspace) section[style*="background: white"],
-.app-content>main:not(.eng-page):not(.plan-workspace) div[style*="background: white"][style*="border"]{
-  border-color:var(--eng-line)!important;
-  box-shadow:var(--shadow-sm);
-}
+.app-content>main:not(.eng-page):not(.plan-workspace) div[style*="background: white"][style*="border"]{border-color:var(--eng-line)!important;box-shadow:var(--shadow-sm)}
 
 @media(max-width:900px){
   .app-content>main:not(.eng-page):not(.plan-workspace){padding:18px 16px!important}
