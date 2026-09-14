@@ -3,9 +3,12 @@ import "./ui/tokens.css";
 import "./ui/ui.css";
 import "./globals.css";
 import "./app-nav.css";
+import "./revos-shell.css";
 import "./page-shell.css";
 import "./plan-workspace.css";
+import "./legacy-revos-overrides.css";
 import AppNav from "./components/app-nav";
+import RevOSTopBar from "./components/revos-topbar";
 
 export const metadata: Metadata = {
   title: "Variable Compensation Tracker",
@@ -23,7 +26,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className="antialiased"><AppNav /><div className="app-content">{children}</div></body>
+      <body className="antialiased"><RevOSTopBar/><AppNav/><div className="app-content">{children}</div></body>
     </html>
   );
 }
