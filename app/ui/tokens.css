@@ -1,0 +1,72 @@
+/* Engagifii Compensation — design tokens
+   Phase 1. Canonical brand values, confirmed by the product owner.
+   Import once from app/layout.tsx BEFORE globals.css. Adds no rules of its own. */
+
+:root{
+  --eng-blue:#2095f3;
+  --eng-orange:#fc9800;
+  --eng-blue-light:#badefa;
+  --eng-navy:#051b34;
+  --eng-blue-strong:#0d7fd6;
+  --eng-blue-ink:#0b5c9e;
+  --eng-blue-tint:#eaf4fe;
+  --eng-blue-surface:#f5fbff;
+  --eng-orange-ink:#8a5200;
+  --eng-orange-deep:#7a4a00;
+  --eng-orange-tint:#fff5e6;
+  --eng-orange-border:#ffd89a;
+  --eng-bg:#f4f6f9;
+  --eng-surface:#ffffff;
+  --eng-surface-sunk:#fbfcfd;
+  --eng-surface-alt:#f7f9fb;
+  --eng-border:#e3e8ee;
+  --eng-border-soft:#eef1f5;
+  --eng-border-dashed:#f2f5f8;
+  --eng-hover:#f7f9fb;
+  --eng-ink:#051b34;
+  --eng-ink-strong:#1d3245;
+  --eng-ink-muted:#31465a;
+  --eng-ink-meta:#5b6b7f;
+  --eng-ink-faint:#5f6d80;
+  --eng-ink-disabled:#616f82;
+  --eng-success:#0f7a50;
+  --eng-success-ink:#0f6b47;
+  --eng-success-tint:#ecf8f2;
+  --eng-success-border:#bfe3d0;
+  --eng-danger:#b42318;
+  --eng-danger-ink:#912a20;
+  --eng-danger-tint:#fef3f2;
+  --eng-danger-border:#f6cfcb;
+  --eng-scheduled:#5b3fa8;
+  --eng-scheduled-tint:#f2edfc;
+  --eng-scheduled-border:#ddd2f5;
+  --eng-font:Roboto,system-ui,-apple-system,"Segoe UI",sans-serif;
+  --eng-font-mono:"Roboto Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  --eng-fs-page-title:22px;
+  --eng-fs-page-h1:28px;
+  --eng-fs-section:15px;
+  --eng-fs-body:13.5px;
+  --eng-fs-meta:12.5px;
+  --eng-fs-small:12px;
+  --eng-fs-micro:11px;
+  --eng-lh-body:1.55;
+  --eng-page-max:1280px;
+  --eng-s1:12px;
+  --eng-s2:16px;
+  --eng-s3:24px;
+  --eng-s4:32px;
+  --eng-r-chip:2px;
+  --eng-r-pill:999px;
+  --eng-r-control:8px;
+  --eng-r-card:12px;
+  --eng-r-panel:14px;
+  --eng-r-round:999px;
+  --eng-shadow-sm:0 1px 2px rgba(5,27,52,.06);
+  --eng-shadow-card:0 2px 10px rgba(5,27,52,.06);
+  --eng-shadow-pop:0 12px 30px rgba(5,27,52,.14);
+  --eng-shadow-bar:0 -6px 20px rgba(5,27,52,.07);
+  --eng-focus:0 0 0 3px rgba(32,149,243,.28);
+  --eng-control-h:36px;
+  --eng-control-h-lg:40px;
+  --eng-row-h:44px;
+}
