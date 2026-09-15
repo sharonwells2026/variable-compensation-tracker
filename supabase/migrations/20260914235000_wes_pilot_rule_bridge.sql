@@ -51,9 +51,7 @@ begin
     where p.rule_set_id=target_rule_set_id and p.object_type='deal' and p.property_name='dealtype'
   ) q where v is not null and v<>'';
 
-  if coalesce(array_length(stage_values,1),0)=0 or coalesce(array_length(type_values,1),0)=0 then
-    return;
-  end if;
+  if coalesce(array_length(stage_values,1),0)=0 or coalesce(array_length(type_values,1),0)=0 then return; end if;
 
   insert into public.comp_component_deal_rules(
     plan_component_id, hubspot_pipeline_id, hubspot_stage_id, hubspot_deal_type,
@@ -114,7 +112,6 @@ begin
      or not (coalesce(access->'permissions','[]'::jsonb) ? 'plans.view') then
     raise exception 'Not authorized to view compensation attribution';
   end if;
-
   select jsonb_build_object(
     'fields',coalesce((select jsonb_agg(jsonb_build_object('field_key',f.field_key,'display_name',f.display_name,'object_type',f.object_type) order by f.calculation_order) from public.comp_hubspot_user_fields f where f.is_active),'[]'::jsonb),
     'current',(
@@ -131,10 +128,7 @@ $$;
 grant execute on function public.get_comp_component_attribution_config(uuid) to authenticated;
 revoke execute on function public.get_comp_component_attribution_config(uuid) from anon;
 
-create or replace function public.save_comp_component_attribution(
-  selected_component_id uuid,
-  selected_field_key text
-)
+create or replace function public.save_comp_component_attribution(selected_component_id uuid, selected_field_key text)
 returns jsonb
 language plpgsql
 security definer
@@ -151,7 +145,6 @@ begin
      or not (coalesce(access->'permissions','[]'::jsonb) ? 'plans.edit') then
     raise exception 'Not authorized to edit compensation attribution';
   end if;
-
   select pv.status::text,pv.effective_start_date into version_status,plan_start
   from public.comp_plan_components c
   join public.comp_plan_versions pv on pv.id=c.plan_version_id
@@ -161,11 +154,9 @@ begin
   if not exists(select 1 from public.comp_hubspot_user_fields f where f.field_key=selected_field_key and f.is_active) then
     raise exception 'Choose an available HubSpot user field for credit attribution.';
   end if;
-
   update public.comp_user_attribution_rules
   set is_active=false,updated_at=pg_catalog.now()
   where plan_component_id=selected_component_id and attribution_purpose='earning' and is_active;
-
   insert into public.comp_user_attribution_rules(
     plan_component_id,attribution_purpose,metric_key,hubspot_user_field_keys,match_logic,
     credit_percentage,qualifying_pipeline_ids,qualifying_deal_types,priority,allow_stacking,
@@ -176,7 +167,6 @@ begin
     jsonb_build_object('configuration_source','earning_type_editor','description','Credit assigned from '||selected_field_key),
     plan_start,true
   ) returning id into new_id;
-
   return jsonb_build_object('status','saved','rule_id',new_id,'field_key',selected_field_key);
 end;
 $$;
@@ -214,28 +204,3 @@ $$;
 
 grant execute on function public.refresh_compensation_management_data(boolean) to authenticated;
 revoke execute on function public.refresh_compensation_management_data(boolean) from anon;
-
--- Extend readiness so a deal-based earning type cannot activate without a credit source
--- or without legacy-compatible Stage + Deal Type source rows generated from its Earned conditions.
-create or replace function public.validate_compensation_plan_version_readiness_core(selected_plan_version_id uuid)
-returns jsonb
-language plpgsql
-security definer
-set search_path = ''
-as $$
-declare
-  base jsonb;
-  blockers jsonb;
-  warnings jsonb;
-  c record;
-  attr_count integer;
-  source_rule_count integer;
-begin
-  -- Keep the existing validator as the source for all current checks by reproducing its result
-  -- through the public wrapper if available is not safe recursively, so perform focused pilot checks
-  -- after calling the prior implementation copied into validate_compensation_plan_version_readiness.
-  -- This function body is replaced below by delegating to the preserved validator is not possible;
-  -- therefore this migration intentionally does not override readiness here.
-  return public.validate_compensation_plan_version_readiness(selected_plan_version_id);
-end;
-$$;
