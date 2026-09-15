@@ -65,14 +65,16 @@ test("full Earning Type editor can configure the payout methods needed for the W
   assert.match(page, /milestone_bonus" disabled/);
 });
 
-test("Plan Builder V2 has dedicated review, cloning, and configurable payment mapping", async () => {
-  const [progress, review, managePlan, settings, paymentMapping, cloneMigration] = await Promise.all([
+test("Plan Builder V2 has dedicated review, cloning, configurable payment mapping, and optional approval runtime", async () => {
+  const [progress, review, managePlan, settings, paymentMapping, cloneMigration, approvalMigration, approvals] = await Promise.all([
     readFile(`${root}/app/plans/components/plan-builder-progress.tsx`, "utf8"),
     readFile(`${root}/app/plans/manage/[versionId]/review/page.tsx`, "utf8"),
     readFile(`${root}/app/plans/manage/[versionId]/page.tsx`, "utf8"),
     readFile(`${root}/app/settings/page.tsx`, "utf8"),
     readFile(`${root}/app/settings/payment-condition-mapping/page.tsx`, "utf8"),
     readFile(`${root}/supabase/migrations/20260915205500_clone_compensation_plan_component.sql`, "utf8"),
+    readFile(`${root}/supabase/migrations/20260915212500_plan_scoped_optional_approval_workflows.sql`, "utf8"),
+    readFile(`${root}/app/plans/manage/[versionId]/approvals/page.tsx`, "utf8"),
   ]);
 
   assert.match(progress, /\/plans\/manage\/\$\{id\}\/review/);
@@ -85,4 +87,10 @@ test("Plan Builder V2 has dedicated review, cloning, and configurable payment ma
   assert.match(settings, /Customer Payment Mapping/);
   assert.match(paymentMapping, /save_comp_business_condition_setting/);
   assert.match(paymentMapping, /customer_payment_received/);
+  assert.match(approvals, /Optional \/ advisory/);
+  assert.match(approvals, /optional reviewer receives an advisory review request/i);
+  assert.match(approvalMigration, /install_plan_approval_workflows/);
+  assert.match(approvalMigration, /compensation_optional_review/);
+  assert.match(approvalMigration, /optional_review_recorded/);
+  assert.match(approvalMigration, /plan_version_id/);
 });
