@@ -18,7 +18,7 @@ const steps:{key:StepKey;label:string;short:string;href:(id:string)=>string}[]=[
   {key:"earnings",label:"What they can earn",short:"Earning Types",href:id=>`/plans/manage/${id}#earning-types`},
   {key:"agreements",label:"Agreements",short:"Agreements",href:id=>`/plans/agreements/${id}`},
   {key:"approvals",label:"Approval workflow",short:"Approvals",href:id=>`/plans/manage/${id}/approvals`},
-  {key:"review",label:"Review & activate",short:"Review",href:id=>`/plans?version=${id}`},
+  {key:"review",label:"Review & activate",short:"Review",href:id=>`/plans/manage/${id}/review`},
 ];
 
 export default function PlanBuilderProgress({versionId,current,completed={},onNavigate}:Props){
