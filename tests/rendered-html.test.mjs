@@ -12,10 +12,7 @@ test("defines the compensation tracker entry experience", async () => {
   ]);
 
   assert.match(layout, /title:\s*["']Variable Compensation Tracker["']/);
-  assert.match(
-    layout,
-    /Engagifii variable compensation management and employee earnings portal\./i,
-  );
+  assert.match(layout, /Engagifii variable compensation management and employee earnings portal\./i);
   assert.match(page, /ENGAGIFII COMPENSATION/);
   assert.match(page, /roles\.includes\("system_administrator"\).*router\.replace\("\/manage"\)/s);
   assert.match(page, /roles\.includes\("finance_payroll"\).*router\.replace\("\/finance"\)/s);
@@ -24,20 +21,25 @@ test("defines the compensation tracker entry experience", async () => {
   assert.doesNotMatch(layout + page, /codex-preview/i);
 });
 
-test("uses the deployed Earned-condition RPC and protects unsaved plan setup", async () => {
-  const [earnedEditor, earningType, managePlan, approvals] = await Promise.all([
+test("uses the deployed Earned-condition RPC and protects or autosaves draft setup", async () => {
+  const [earnedEditor, earningType, managePlan, approvals, newPlan, people] = await Promise.all([
     readFile(`${root}/app/plans/component/[componentId]/earned-conditions-editor.tsx`, "utf8"),
     readFile(`${root}/app/plans/component/[componentId]/page.tsx`, "utf8"),
     readFile(`${root}/app/plans/manage/[versionId]/page.tsx`, "utf8"),
     readFile(`${root}/app/plans/manage/[versionId]/approvals/page.tsx`, "utf8"),
+    readFile(`${root}/app/plans/new/page.tsx`, "utf8"),
+    readFile(`${root}/app/plans/applicability/[versionId]/page.tsx`, "utf8"),
   ]);
 
   assert.match(earnedEditor, /save_simple_comp_qualification/);
   assert.doesNotMatch(earnedEditor, /save_simple_comp_earned_conditions/);
   assert.match(earningType, /You have unsaved changes\. Save them before leaving this Earning Type\?/);
   assert.match(earningType, /beforeunload/);
-  assert.match(managePlan, /You have unsaved plan details\. Save them before leaving this page\?/);
+  assert.match(managePlan, /if\(dirty\)\{const ok=await saveDraft\(\)/);
   assert.match(managePlan, /beforeunload/);
+  assert.match(newPlan, /Next step/);
+  assert.match(newPlan, /router\.push\(versionId\?`\/plans\/applicability\/\$\{versionId\}`/);
+  assert.match(people, /saveAndNext/);
   assert.match(approvals, /You have unsaved approval changes\. Save them before returning to Plan Setup\?/);
   assert.match(approvals, /beforeunload/);
 });
