@@ -64,3 +64,25 @@ test("full Earning Type editor can configure the payout methods needed for the W
   assert.match(page, /fixed_amount_per_unit" disabled/);
   assert.match(page, /milestone_bonus" disabled/);
 });
+
+test("Plan Builder V2 has dedicated review, cloning, and configurable payment mapping", async () => {
+  const [progress, review, managePlan, settings, paymentMapping, cloneMigration] = await Promise.all([
+    readFile(`${root}/app/plans/components/plan-builder-progress.tsx`, "utf8"),
+    readFile(`${root}/app/plans/manage/[versionId]/review/page.tsx`, "utf8"),
+    readFile(`${root}/app/plans/manage/[versionId]/page.tsx`, "utf8"),
+    readFile(`${root}/app/settings/page.tsx`, "utf8"),
+    readFile(`${root}/app/settings/payment-condition-mapping/page.tsx`, "utf8"),
+    readFile(`${root}/supabase/migrations/20260915205500_clone_compensation_plan_component.sql`, "utf8"),
+  ]);
+
+  assert.match(progress, /\/plans\/manage\/\$\{id\}\/review/);
+  assert.match(review, /validate_compensation_plan_version_readiness/);
+  assert.match(review, /Approve plan/);
+  assert.match(review, /Activate plan/);
+  assert.match(managePlan, /clone_compensation_plan_component/);
+  assert.match(managePlan, /Clone & edit/);
+  assert.match(cloneMigration, /create or replace function public\.clone_compensation_plan_component/);
+  assert.match(settings, /Customer Payment Mapping/);
+  assert.match(paymentMapping, /save_comp_business_condition_setting/);
+  assert.match(paymentMapping, /customer_payment_received/);
+});
