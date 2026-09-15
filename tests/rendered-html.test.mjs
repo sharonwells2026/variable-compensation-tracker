@@ -40,7 +40,7 @@ test("uses the deployed Earned-condition RPC and protects or autosaves draft set
   assert.match(newPlan, /Next step/);
   assert.match(newPlan, /router\.push\(versionId\?`\/plans\/applicability\/\$\{versionId\}`/);
   assert.match(people, /saveAndNext/);
-  assert.match(approvals, /You have unsaved approval changes\. Save them before returning to Plan Setup\?/);
+  assert.match(approvals, /const next=async\(\)=>\{if\(dirty\)\{const ok=await save\(\)/);
   assert.match(approvals, /beforeunload/);
 });
 
