@@ -25,16 +25,40 @@ test("defines the compensation tracker entry experience", async () => {
 });
 
 test("uses the deployed Earned-condition RPC and protects unsaved plan setup", async () => {
-  const [earnedEditor, managePlan, approvals] = await Promise.all([
+  const [earnedEditor, earningType, managePlan, approvals] = await Promise.all([
     readFile(`${root}/app/plans/component/[componentId]/earned-conditions-editor.tsx`, "utf8"),
+    readFile(`${root}/app/plans/component/[componentId]/page.tsx`, "utf8"),
     readFile(`${root}/app/plans/manage/[versionId]/page.tsx`, "utf8"),
     readFile(`${root}/app/plans/manage/[versionId]/approvals/page.tsx`, "utf8"),
   ]);
 
   assert.match(earnedEditor, /save_simple_comp_qualification/);
   assert.doesNotMatch(earnedEditor, /save_simple_comp_earned_conditions/);
+  assert.match(earningType, /You have unsaved changes\. Save them before leaving this Earning Type\?/);
+  assert.match(earningType, /beforeunload/);
   assert.match(managePlan, /You have unsaved plan details\. Save them before leaving this page\?/);
   assert.match(managePlan, /beforeunload/);
   assert.match(approvals, /You have unsaved approval changes\. Save them before returning to Plan Setup\?/);
   assert.match(approvals, /beforeunload/);
+});
+
+test("full Earning Type editor can configure the payout methods needed for the Wes pilot", async () => {
+  const page = await readFile(`${root}/app/plans/component/[componentId]/page.tsx`, "utf8");
+
+  assert.match(page, /value="percentage">Percentage/);
+  assert.match(page, /value="tiered_percentage">Different percentages by contract term/);
+  assert.match(page, /Contract-term payout tiers/);
+  assert.match(page, /minimum_contract_years/);
+  assert.match(page, /maximum_contract_years/);
+  assert.match(page, /value="threshold_bonus">Threshold bonus/);
+  assert.match(page, /Threshold amount/);
+  assert.match(page, /Bonus paid when threshold is met/);
+  assert.match(page, /value="fixed_amount">Fixed dollar amount/);
+  assert.match(page, /value="average_arr">ARR/);
+  assert.match(page, /value="book_of_business">Book of business value/);
+  assert.match(page, /value="annual">Annually/);
+  assert.match(page, /The customer has paid/);
+  assert.match(page, /Invoice Paid Date/);
+  assert.match(page, /fixed_amount_per_unit" disabled/);
+  assert.match(page, /milestone_bonus" disabled/);
 });
