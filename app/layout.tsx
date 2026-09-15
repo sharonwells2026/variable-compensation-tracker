@@ -6,6 +6,7 @@ import "./app-nav.css";
 import "./revos-shell.css";
 import "./page-shell.css";
 import "./plan-workspace.css";
+import "./plan-builder-v2.css";
 import "./legacy-revos-overrides.css";
 import AppNav from "./components/app-nav";
 import RevOSTopBar from "./components/revos-topbar";
