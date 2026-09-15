@@ -23,3 +23,18 @@ test("defines the compensation tracker entry experience", async () => {
   assert.match(page, /router\.replace\("\/me"\)/);
   assert.doesNotMatch(layout + page, /codex-preview/i);
 });
+
+test("uses the deployed Earned-condition RPC and protects unsaved plan setup", async () => {
+  const [earnedEditor, managePlan, approvals] = await Promise.all([
+    readFile(`${root}/app/plans/component/[componentId]/earned-conditions-editor.tsx`, "utf8"),
+    readFile(`${root}/app/plans/manage/[versionId]/page.tsx`, "utf8"),
+    readFile(`${root}/app/plans/manage/[versionId]/approvals/page.tsx`, "utf8"),
+  ]);
+
+  assert.match(earnedEditor, /save_simple_comp_qualification/);
+  assert.doesNotMatch(earnedEditor, /save_simple_comp_earned_conditions/);
+  assert.match(managePlan, /You have unsaved plan details\. Save them before leaving this page\?/);
+  assert.match(managePlan, /beforeunload/);
+  assert.match(approvals, /You have unsaved approval changes\. Save them before returning to Plan Setup\?/);
+  assert.match(approvals, /beforeunload/);
+});
