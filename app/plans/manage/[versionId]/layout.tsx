@@ -22,7 +22,16 @@ export default function ManagePlanLayout({children}:{children:React.ReactNode}){
     {href:`${base}/approvals`,label:"Approvals",active:pathname===`${base}/approvals`},
     {href:`/plans?version=${id}`,label:"Readiness & activation",active:false},
   ];
+  const protectUnsaved=(event:React.MouseEvent<HTMLAnchorElement>)=>{
+    if(document.body.dataset.planDirty!=="true")return;
+    event.preventDefault();
+    window.alert("You have unsaved plan details. Save them before moving to another plan section.");
+  };
   const deleteDraft=async()=>{
+    if(document.body.dataset.planDirty==="true"){
+      window.alert("Save or discard your unsaved plan details before deleting this draft.");
+      return;
+    }
     const ok=window.confirm("Delete this unused draft plan? This is only allowed when it has no earnings or historical dependencies. Active or historical plans cannot be deleted.");
     if(!ok)return;
     setDeleting(true);setDeleteError("");
@@ -35,7 +44,7 @@ export default function ManagePlanLayout({children}:{children:React.ReactNode}){
     <div className="plan-page-shell" style={{paddingTop:18,paddingBottom:0}}>
       <div style={{display:"flex",gap:12,alignItems:"flex-start",justifyContent:"space-between",flexWrap:"wrap",borderBottom:"1px solid var(--eng-border, #e3e8ef)",paddingBottom:10}}>
         <nav aria-label="Plan setup sections" style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap"}}>
-          {items.map(item=><Link key={item.href} href={item.href} className={`plan-button ${item.active?"primary":"secondary"}`} aria-current={item.active?"page":undefined}>{item.label}</Link>)}
+          {items.map(item=><Link key={item.href} href={item.href} onClick={protectUnsaved} className={`plan-button ${item.active?"primary":"secondary"}`} aria-current={item.active?"page":undefined}>{item.label}</Link>)}
         </nav>
         <button type="button" className="plan-button secondary" onClick={()=>void deleteDraft()} disabled={deleting} style={{color:"var(--eng-danger, #8b3030)",borderColor:"var(--eng-danger-border, #efcaca)"}}>{deleting?"Deleting…":"Delete unused draft"}</button>
       </div>
