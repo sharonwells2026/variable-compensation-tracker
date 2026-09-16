@@ -10,7 +10,6 @@ test("defines the compensation tracker entry experience", async () => {
     readFile(`${root}/app/layout.tsx`, "utf8"),
     readFile(`${root}/app/page.tsx`, "utf8"),
   ]);
-
   assert.match(layout, /title:\s*["']Variable Compensation Tracker["']/);
   assert.match(layout, /Engagifii variable compensation management and employee earnings portal\./i);
   assert.match(page, /ENGAGIFII COMPENSATION/);
@@ -30,7 +29,6 @@ test("uses the deployed Earned-condition RPC and protects or autosaves draft set
     readFile(`${root}/app/plans/new/page.tsx`, "utf8"),
     readFile(`${root}/app/plans/applicability/[versionId]/page.tsx`, "utf8"),
   ]);
-
   assert.match(earnedEditor, /save_simple_comp_qualification/);
   assert.doesNotMatch(earnedEditor, /save_simple_comp_earned_conditions/);
   assert.match(earningType, /You have unsaved changes\. Save them before leaving this Earning Type\?/);
@@ -46,21 +44,23 @@ test("uses the deployed Earned-condition RPC and protects or autosaves draft set
 
 test("full Earning Type editor can configure the payout methods needed for the Wes pilot", async () => {
   const page = await readFile(`${root}/app/plans/component/[componentId]/page.tsx`, "utf8");
-
   assert.match(page, /value="percentage">Percentage/);
   assert.match(page, /value="tiered_percentage">Different percentages by contract term/);
   assert.match(page, /Contract-term payout tiers/);
   assert.match(page, /minimum_contract_years/);
   assert.match(page, /maximum_contract_years/);
-  assert.match(page, /value="threshold_bonus">Threshold bonus/);
-  assert.match(page, /Threshold amount/);
-  assert.match(page, /Bonus paid when threshold is met/);
+  assert.match(page, /value="threshold_bonus">Bonus when a quota \/ benchmark is reached/);
+  assert.match(page, /Quota \/ benchmark/);
+  assert.match(page, /Bonus paid when benchmark is exceeded/);
   assert.match(page, /value="fixed_amount">Fixed dollar amount/);
   assert.match(page, /value="average_arr">ARR/);
-  assert.match(page, /value="book_of_business">Book of business value/);
+  assert.match(page, /value="book_of_business">Running total \/ book of business/);
   assert.match(page, /value="annual">Annually/);
   assert.match(page, /The customer has paid/);
-  assert.match(page, /Invoice Paid Date/);
+  assert.match(page, /Customer has paid/);
+  assert.match(page, /aggregateComponentCodes/);
+  assert.match(page, /aggregateFixedUplift/);
+  assert.match(page, /Advanced AND \/ OR \/ NOT logic|Use advanced logic/);
   assert.match(page, /fixed_amount_per_unit" disabled/);
   assert.match(page, /milestone_bonus" disabled/);
 });
@@ -76,7 +76,6 @@ test("Plan Builder V2 has dedicated review, cloning, configurable payment mappin
     readFile(`${root}/supabase/migrations/20260915212500_plan_scoped_optional_approval_workflows.sql`, "utf8"),
     readFile(`${root}/app/plans/manage/[versionId]/approvals/page.tsx`, "utf8"),
   ]);
-
   assert.match(progress, /\/plans\/manage\/\$\{id\}\/review/);
   assert.match(review, /validate_compensation_plan_version_readiness/);
   assert.match(review, /Approve plan/);
