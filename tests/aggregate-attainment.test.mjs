@@ -25,6 +25,16 @@ test("aggregate attainment setup exposes benchmark and source Earning Types",asy
   assert.match(page,/save_compensation_plan_component/);
 });
 
+test("aggregate editor preserves unrelated Earning Type metadata",async()=>{
+  const page=await readFile(`${root}/app/plans/component/[componentId]/aggregate/page.tsx`,"utf8");
+  assert.match(page,/selected_calculation_order:c\.calculation_order\?\?1/);
+  assert.match(page,/selected_is_active:c\.is_active\?\?true/);
+  assert.match(page,/selected_payout_timing_method:c\.payout_timing_method\|\|"annual"/);
+  assert.match(page,/selected_allow_manager_payout_override:c\.allow_manager_payout_override\?\?true/);
+  assert.match(page,/selected_measurement_label:c\.measurement_label\?\?null/);
+  assert.match(page,/repeat\(auto-fit,minmax\(130px,1fr\)\)/);
+});
+
 test("Earned conditions expose advanced nested logic without flattening it",async()=>{
   const editor=await readFile(`${root}/app/plans/component/[componentId]/earned-conditions-editor.tsx`,"utf8");
   assert.match(editor,/Need AND \/ OR \/ NOT\? Open Advanced logic/);
