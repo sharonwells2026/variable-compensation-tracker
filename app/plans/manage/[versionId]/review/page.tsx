@@ -4,7 +4,7 @@ import {useEffect,useMemo,useState} from "react";
 import Link from "next/link";
 import {useParams} from "next/navigation";
 import {createClient} from "@supabase/supabase-js";
-import {AlertTriangle,ArrowLeft,CheckCircle2,FileText,ShieldCheck,Users} from "lucide-react";
+import {AlertTriangle,ArrowLeft,ArrowRight,CheckCircle2,FileText,ShieldCheck,Users} from "lucide-react";
 import PlanBuilderProgress from "../../../components/plan-builder-progress";
 
 const supabase=createClient(process.env.NEXT_PUBLIC_SUPABASE_URL||"https://bwdtbsqojtxfbeyfkang.supabase.co",process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY||"sb_publishable_UEFOn-Rc0sczK9PwqVI91w_IAz95BcH");
@@ -18,6 +18,16 @@ type Readiness={ready:boolean;blocker_count:number;warning_count?:number;blocker
 type Access={roles?:string[];permissions?:string[]};
 
 function localToday(){const d=new Date();const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,"0"),day=String(d.getDate()).padStart(2,"0");return `${y}-${m}-${day}`}
+function blockerHref(item:ReadinessItem,versionId:string){
+ if(item.section==="approvals")return `/plans/manage/${versionId}/approvals`;
+ if(item.section==="agreements")return `/plans/agreements/${versionId}`;
+ if(item.section==="people"||item.section==="applicability")return `/plans/applicability/${versionId}`;
+ if(item.component_id&&["missing_aggregate_sources","missing_quota","missing_threshold_bonus"].includes(item.code))return `/plans/component/${item.component_id}/aggregate?version=${versionId}`;
+ if(item.component_id&&item.section==="payment")return `/plans/component/${item.component_id}/payment-condition?version=${versionId}`;
+ if(item.component_id)return `/plans/component/${item.component_id}?version=${versionId}`;
+ if(item.section==="earning_types"||item.section==="earned")return `/plans/manage/${versionId}`;
+ return `/plans/manage/${versionId}`;
+}
 
 export default function PlanReviewPage(){
  const params=useParams<{versionId:string}>();
@@ -49,7 +59,7 @@ export default function PlanReviewPage(){
     <div><FileText size={17}/><b>{version.components.length}</b><span>Earning Type{version.components.length===1?"":"s"}</span></div>
     <div><ShieldCheck size={17}/><b>{readiness?.blocker_count||0}</b><span>blocker{readiness?.blocker_count===1?"":"s"}</span></div>
    </div>
-   {blockers.length>0&&<div style={{display:"grid",gap:8,marginTop:18}}>{blockers.map((b,i)=><div key={`${b.code}-${i}`} className="plan-alert warning" style={{margin:0}}><AlertTriangle size={15}/><span>{b.message}</span></div>)}</div>}
+   {blockers.length>0&&<div style={{display:"grid",gap:8,marginTop:18}}>{blockers.map((b,i)=><div key={`${b.code}-${i}`} className="plan-alert warning" style={{margin:0,justifyContent:"space-between",alignItems:"center",gap:12}}><span style={{display:"flex",alignItems:"center",gap:8,minWidth:0}}><AlertTriangle size={15}/><span>{b.message}</span></span><Link href={blockerHref(b,version.version_id)} className="plan-button secondary" style={{flexShrink:0}}>Fix this<ArrowRight size={14}/></Link></div>)}</div>}
    {warnings.length>0&&<div style={{display:"grid",gap:8,marginTop:18}}>{warnings.map((w,i)=><div key={`${w.code}-${i}`} className="plan-info-row" style={{margin:0}}><AlertTriangle size={15}/><span>{w.message}</span></div>)}</div>}
    {readiness?.ready&&<div className="plan-info-row"><CheckCircle2 size={16}/><span>All required readiness checks passed. Approval does not activate the plan; activation is a separate action.</span></div>}
   </section>
