@@ -35,6 +35,15 @@ test("aggregate editor preserves unrelated Earning Type metadata",async()=>{
   assert.match(page,/repeat\(auto-fit,minmax\(130px,1fr\)\)/);
 });
 
+test("aggregate normalization is insert-safe and never backfills active plans",async()=>{
+  const migration=await readFile(`${root}/supabase/migrations/20260916221500_normalize_aggregate_configuration.sql`,"utf8");
+  assert.match(migration,/old_cfg jsonb:='\{\}'::jsonb/);
+  assert.match(migration,/if tg_op='UPDATE' then\s+old_cfg:=coalesce\(old\.rule_configuration,'\{\}'::jsonb\)/);
+  assert.match(migration,/from public\.comp_plan_versions pv/);
+  assert.match(migration,/pv\.status='draft'/);
+  assert.doesNotMatch(migration,/where measurement_source='book_of_business'\s+and calculation_type='threshold_bonus';/);
+});
+
 test("Earned conditions expose advanced nested logic without flattening it",async()=>{
   const editor=await readFile(`${root}/app/plans/component/[componentId]/earned-conditions-editor.tsx`,"utf8");
   assert.match(editor,/Need AND \/ OR \/ NOT\? Open Advanced logic/);
