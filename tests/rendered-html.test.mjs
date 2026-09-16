@@ -80,6 +80,10 @@ test("Plan Builder V2 has dedicated review, cloning, configurable payment mappin
   assert.match(review, /validate_compensation_plan_version_readiness/);
   assert.match(review, /Approve plan/);
   assert.match(review, /Activate plan/);
+  assert.match(review, /function blockerHref/);
+  assert.match(review, /missing_aggregate_sources/);
+  assert.match(review, /\/approvals/);
+  assert.match(review, /Fix this/);
   assert.match(managePlan, /clone_compensation_plan_component/);
   assert.match(managePlan, /Clone & edit/);
   assert.match(cloneMigration, /create or replace function public\.clone_compensation_plan_component/);
