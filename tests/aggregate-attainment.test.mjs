@@ -24,3 +24,12 @@ test("aggregate attainment setup exposes benchmark and source Earning Types",asy
   assert.match(page,/preview_comp_component_aggregate/);
   assert.match(page,/save_compensation_plan_component/);
 });
+
+test("Earned conditions expose advanced nested logic without flattening it",async()=>{
+  const editor=await readFile(`${root}/app/plans/component/[componentId]/earned-conditions-editor.tsx`,"utf8");
+  assert.match(editor,/Need AND \/ OR \/ NOT\? Open Advanced logic/);
+  assert.match(editor,/Advanced Earned logic is active/);
+  assert.match(editor,/usesAdvancedLogic/);
+  assert.match(editor,/groups\.length>1/);
+  assert.match(editor,/n\.negate===true/);
+});
