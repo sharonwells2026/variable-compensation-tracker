@@ -68,6 +68,8 @@ begin
 end;
 $$;
 
+revoke all on function private.normalize_comp_aggregate_configuration() from public, anon, authenticated;
+
 drop trigger if exists normalize_comp_aggregate_configuration on public.comp_plan_components;
 create trigger normalize_comp_aggregate_configuration
 before insert or update on public.comp_plan_components
