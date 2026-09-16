@@ -5,9 +5,9 @@ set search_path=''
 as $$
 declare
   cfg jsonb:=coalesce(new.rule_configuration,'{}'::jsonb);
-  old_cfg jsonb:=coalesce(old.rule_configuration,'{}'::jsonb);
+  old_cfg jsonb:='{}'::jsonb;
   incoming_agg jsonb:=coalesce(cfg->'aggregate','{}'::jsonb);
-  old_agg jsonb:=coalesce(old_cfg->'aggregate','{}'::jsonb);
+  old_agg jsonb:='{}'::jsonb;
   use_legacy boolean:=false;
   sources jsonb;
   baseline numeric;
@@ -16,6 +16,11 @@ declare
   comparison_key text;
   period_key text;
 begin
+  if tg_op='UPDATE' then
+    old_cfg:=coalesce(old.rule_configuration,'{}'::jsonb);
+    old_agg:=coalesce(old_cfg->'aggregate','{}'::jsonb);
+  end if;
+
   if new.measurement_source<>'book_of_business' or new.calculation_type<>'threshold_bonus' then
     return new;
   end if;
@@ -75,7 +80,10 @@ create trigger normalize_comp_aggregate_configuration
 before insert or update on public.comp_plan_components
 for each row execute function private.normalize_comp_aggregate_configuration();
 
-update public.comp_plan_components
-set rule_configuration=rule_configuration
-where measurement_source='book_of_business'
-  and calculation_type='threshold_bonus';
+update public.comp_plan_components c
+set rule_configuration=c.rule_configuration
+from public.comp_plan_versions pv
+where pv.id=c.plan_version_id
+  and pv.status='draft'
+  and c.measurement_source='book_of_business'
+  and c.calculation_type='threshold_bonus';
