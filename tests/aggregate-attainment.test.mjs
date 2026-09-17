@@ -15,24 +15,24 @@ test("aggregate attainment engine supports threshold and milestone payouts",asyn
   assert.match(migration,/resolve_comp_user_attribution/);
 });
 
-test("aggregate attainment setup exposes benchmark and source Earning Types",async()=>{
-  const page=await readFile(`${root}/app/plans/component/[componentId]/aggregate/page.tsx`,"utf8");
-  assert.match(page,/What counts toward attainment\?/);
-  assert.match(page,/Starting baseline/);
-  assert.match(page,/Benchmark \*/);
-  assert.match(page,/Payout when benchmark is met/);
-  assert.match(page,/preview_comp_component_aggregate/);
-  assert.match(page,/save_compensation_plan_component/);
+test("legacy aggregate route redirects to the authoritative Earning Type editor",async()=>{
+  const legacyPage=await readFile(`${root}/app/plans/component/[componentId]/aggregate/page.tsx`,"utf8");
+  assert.match(legacyPage,/LegacyAggregateRedirect/);
+  assert.match(legacyPage,/router\.replace\(`\/plans\/component\/\$\{params\.componentId\}/);
+  assert.doesNotMatch(legacyPage,/Choose at least one Earning Type that counts toward this benchmark/);
 });
 
-test("aggregate editor preserves unrelated Earning Type metadata",async()=>{
-  const page=await readFile(`${root}/app/plans/component/[componentId]/aggregate/page.tsx`,"utf8");
-  assert.match(page,/selected_calculation_order:c\.calculation_order\?\?1/);
-  assert.match(page,/selected_is_active:c\.is_active\?\?true/);
-  assert.match(page,/selected_payout_timing_method:c\.payout_timing_method\|\|"annual"/);
-  assert.match(page,/selected_allow_manager_payout_override:c\.allow_manager_payout_override\?\?true/);
-  assert.match(page,/selected_measurement_label:c\.measurement_label\?\?null/);
-  assert.match(page,/repeat\(auto-fit,minmax\(130px,1fr\)\)/);
+test("authoritative aggregate editor exposes Metric Qualification and preserves component metadata",async()=>{
+  const page=await readFile(`${root}/app/plans/component/[componentId]/page.tsx`,"utf8");
+  assert.match(page,/Build Metric Qualification rule/);
+  assert.match(page,/Value to sum \*/);
+  assert.match(page,/aggregateQualificationRuleSetId/);
+  assert.match(page,/aggregateValueField/);
+  assert.match(page,/selected_calculation_order:1/);
+  assert.match(page,/selected_is_active:true/);
+  assert.match(page,/selected_payout_timing_method:"annual"/);
+  assert.match(page,/selected_allow_manager_payout_override:true/);
+  assert.match(page,/selected_measurement_label:null/);
 });
 
 test("aggregate normalization is insert-safe and never backfills active plans",async()=>{
