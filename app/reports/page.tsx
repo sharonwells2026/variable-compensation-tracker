@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
 import { createClient } from "@supabase/supabase-js";
 import { Download, RefreshCw } from "lucide-react";
 
@@ -51,10 +51,7 @@ type Earning = {
   payment_status: string;
   paid_amount: number;
   hold_reason: string | null;
-  expected_payment_date: string | null;
   expected_pay_period_label: string | null;
-  expected_pay_period_start?: string | null;
-  expected_pay_period_end?: string | null;
   finance_accepted_at?: string | null;
   reconciliation_status: string | null;
   source_match_status: string | null;
@@ -78,9 +75,6 @@ type Payment = {
   pay_period_end: string | null;
   pay_period_label: string | null;
   finance_accepted_at?: string | null;
-  actual_payment_date?: string | null;
-  payment_reference?: string | null;
-  payment_method?: string | null;
 };
 
 type FinancePayload = {
@@ -126,14 +120,8 @@ function today() {
 }
 
 export default function ReportsPage() {
-  const [earnings, setEarnings] = useState<EarningsPayload>({
-    summary: {},
-    earnings: [],
-  });
-  const [finance, setFinance] = useState<FinancePayload>({
-    accepted_unpaid: [],
-    paid: [],
-  });
+  const [earnings, setEarnings] = useState<EarningsPayload>({ summary: {}, earnings: [] });
+  const [finance, setFinance] = useState<FinancePayload>({ accepted_unpaid: [], paid: [] });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [employee, setEmployee] = useState("all");
@@ -149,6 +137,7 @@ export default function ReportsPage() {
 
     setLoading(true);
     setError("");
+
     const [earningsResult, financeResult] = await Promise.all([
       supabase.rpc("get_admin_earnings_data"),
       supabase.rpc("get_finance_payment_workspace_data"),
@@ -176,8 +165,7 @@ export default function ReportsPage() {
   }, []);
 
   const employees = useMemo(
-    () =>
-      Array.from(new Set(earnings.earnings.map((item) => item.employee_name))).sort(),
+    () => Array.from(new Set(earnings.earnings.map((item) => item.employee_name))).sort(),
     [earnings.earnings],
   );
 
@@ -206,11 +194,11 @@ export default function ReportsPage() {
   const totals = useMemo(
     () =>
       rows.reduce(
-        (totalsSoFar, item) => ({
-          earned: totalsSoFar.earned + Number(item.earned_amount || 0),
-          eligible: totalsSoFar.eligible + Number(item.eligible_amount || 0),
-          approved: totalsSoFar.approved + Number(item.approved_amount || 0),
-          paid: totalsSoFar.paid + Number(item.paid_amount || 0),
+        (acc, item) => ({
+          earned: acc.earned + Number(item.earned_amount || 0),
+          eligible: acc.eligible + Number(item.eligible_amount || 0),
+          approved: acc.approved + Number(item.approved_amount || 0),
+          paid: acc.paid + Number(item.paid_amount || 0),
         }),
         { earned: 0, eligible: 0, approved: 0, paid: 0 },
       ),
@@ -311,6 +299,7 @@ export default function ReportsPage() {
       "Finance Accepted At",
       "Payment Status",
     ];
+
     const csvRows = payable.map((item) => [
       item.employee_name,
       item.earning_name,
@@ -365,7 +354,7 @@ export default function ReportsPage() {
             className="eng-card__body"
             style={{
               display: "grid",
-              gridTemplateColumns: "minmax(220px,1fr) repeat(2,minmax(150px,.55fr))",
+              gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))",
               gap: 10,
             }}
           >
@@ -379,9 +368,7 @@ export default function ReportsPage() {
               >
                 <option value="all">All employees</option>
                 {employees.map((name) => (
-                  <option key={name} value={name}>
-                    {name}
-                  </option>
+                  <option key={name} value={name}>{name}</option>
                 ))}
               </select>
             </label>
@@ -408,14 +395,7 @@ export default function ReportsPage() {
           </div>
         </section>
 
-        <section
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit,minmax(170px,1fr))",
-            gap: 10,
-            marginBottom: 18,
-          }}
-        >
+        <section style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(170px,1fr))", gap: 10, marginBottom: 18 }}>
           {[
             ["Earned", totals.earned],
             ["Eligible", totals.eligible],
@@ -425,10 +405,7 @@ export default function ReportsPage() {
             <div className="eng-card" key={String(label)}>
               <div className="eng-card__body">
                 <small>{label}</small>
-                <b
-                  className="eng-figure"
-                  style={{ display: "block", fontSize: 24, marginTop: 5 }}
-                >
+                <b className="eng-figure" style={{ display: "block", fontSize: 24, marginTop: 5 }}>
                   {loading ? "—" : money(Number(value))}
                 </b>
               </div>
@@ -441,43 +418,20 @@ export default function ReportsPage() {
             <div>
               <h2>Compensation ledger</h2>
               <p>
-                {rows.length} current earning record{rows.length === 1 ? "" : "s"} in
-                this view. Export includes the source deal, calculation basis, rate and
-                eligibility evidence when recorded.
+                {rows.length} current earning record{rows.length === 1 ? "" : "s"} in this view.
+                Export includes source, calculation basis, rate and eligibility evidence when recorded.
               </p>
             </div>
-            <button
-              className="eng-btn eng-btn--primary"
-              onClick={exportLedger}
-              disabled={!rows.length}
-            >
-              <Download size={16} />
-              Export ledger CSV
+            <button className="eng-btn eng-btn--primary" onClick={exportLedger} disabled={!rows.length}>
+              <Download size={16} /> Export ledger CSV
             </button>
           </div>
           <div className="eng-card__body" style={{ overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 980 }}>
               <thead>
                 <tr>
-                  {[
-                    "Employee",
-                    "Earning",
-                    "Source",
-                    "Earned date",
-                    "Basis",
-                    "Earned",
-                    "Eligible",
-                    "Approved",
-                    "Payment",
-                  ].map((heading) => (
-                    <th
-                      key={heading}
-                      style={{
-                        textAlign: "left",
-                        padding: 8,
-                        borderBottom: "1px solid var(--eng-border,#e6e8ec)",
-                      }}
-                    >
+                  {["Employee", "Earning", "Source", "Earned date", "Basis", "Earned", "Eligible", "Approved", "Payment"].map((heading) => (
+                    <th key={heading} style={{ textAlign: "left", padding: 8, borderBottom: "1px solid var(--eng-border,#e6e8ec)" }}>
                       {heading}
                     </th>
                   ))}
@@ -490,33 +444,23 @@ export default function ReportsPage() {
                     <tr key={item.earning_id}>
                       <td style={{ padding: 8 }}>{item.employee_name}</td>
                       <td style={{ padding: 8 }}>{item.earning_name}</td>
-                      <td style={{ padding: 8 }}>
-                        {source.deal_name || item.source_external_id || "—"}
-                      </td>
+                      <td style={{ padding: 8 }}>{source.deal_name || item.source_external_id || "—"}</td>
                       <td style={{ padding: 8 }}>{item.earned_date || "—"}</td>
                       <td style={{ padding: 8 }}>
                         {source.source_amount != null
-                          ? `${money(source.source_amount)}${
-                              source.component_rate != null
-                                ? ` × ${percent(source.component_rate)}`
-                                : ""
-                            }`
+                          ? `${money(source.source_amount)}${source.component_rate != null ? ` × ${percent(source.component_rate)}` : ""}`
                           : "—"}
                       </td>
                       <td style={{ padding: 8 }}>{money(item.earned_amount)}</td>
                       <td style={{ padding: 8 }}>{money(item.eligible_amount)}</td>
                       <td style={{ padding: 8 }}>{money(item.approved_amount)}</td>
-                      <td style={{ padding: 8 }}>
-                        {item.payment_status.replaceAll("_", " ")}
-                      </td>
+                      <td style={{ padding: 8 }}>{item.payment_status.replaceAll("_", " ")}</td>
                     </tr>
                   );
                 })}
               </tbody>
             </table>
-            {rows.length > 100 && (
-              <small>Showing first 100 rows. CSV export includes all {rows.length}.</small>
-            )}
+            {rows.length > 100 && <small>Showing first 100 rows. CSV export includes all {rows.length}.</small>}
           </div>
         </section>
 
@@ -525,50 +469,30 @@ export default function ReportsPage() {
             <div>
               <h2>Payment-ready payroll report</h2>
               <p>
-                Approved compensation currently eligible to be scheduled for payroll. A
-                completed Finance handoff may be represented by the payment-ready status
-                even on legacy records where Finance Accepted At was not populated.
+                Earnings appear here when all payment-required approvals and handoffs are complete.
+                Exporting this report does not mark anything paid.
               </p>
             </div>
-            <button
-              className="eng-btn eng-btn--primary"
-              onClick={exportPayroll}
-              disabled={!payable.length}
-            >
-              <Download size={16} />
-              Export payroll CSV
+            <button className="eng-btn eng-btn--primary" onClick={exportPayroll} disabled={!payable.length}>
+              <Download size={16} /> Export payroll CSV
             </button>
           </div>
           <div className="eng-card__body">
             {payable.length === 0 ? (
               <div className="eng-empty eng-empty--inline">
                 <h2>No payment-ready compensation in this view</h2>
-                <p>
-                  Approved earnings appear here after all payment-required approvals and
-                  handoffs are complete.
-                </p>
+                <p>Approved earnings will appear here after the required payment handoffs are complete.</p>
               </div>
             ) : (
               <div style={{ overflowX: "auto" }}>
-                <table
-                  style={{ width: "100%", borderCollapse: "collapse", minWidth: 760 }}
-                >
+                <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 760 }}>
                   <thead>
                     <tr>
-                      {["Employee", "Earning", "Pay period", "Approved", "Remaining"].map(
-                        (heading) => (
-                          <th
-                            key={heading}
-                            style={{
-                              textAlign: "left",
-                              padding: 8,
-                              borderBottom: "1px solid var(--eng-border,#e6e8ec)",
-                            }}
-                          >
-                            {heading}
-                          </th>
-                        ),
-                      )}
+                      {["Employee", "Earning", "Pay period", "Approved", "Remaining"].map((heading) => (
+                        <th key={heading} style={{ textAlign: "left", padding: 8, borderBottom: "1px solid var(--eng-border,#e6e8ec)" }}>
+                          {heading}
+                        </th>
+                      ))}
                     </tr>
                   </thead>
                   <tbody>
