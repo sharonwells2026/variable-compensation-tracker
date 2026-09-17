@@ -22,12 +22,13 @@ test("legacy aggregate route redirects to the authoritative Earning Type editor"
   assert.doesNotMatch(legacyPage,/Choose at least one Earning Type that counts toward this benchmark/);
 });
 
-test("authoritative aggregate editor exposes Metric Qualification and preserves component metadata",async()=>{
+test("authoritative aggregate editor exposes configurable Metric Sources and preserves component metadata",async()=>{
   const page=await readFile(`${root}/app/plans/component/[componentId]/page.tsx`,"utf8");
-  assert.match(page,/Build Metric Qualification rule/);
+  assert.match(page,/Metric Sources/);
+  assert.match(page,/Add Metric Source/);
   assert.match(page,/Value to sum \*/);
-  assert.match(page,/aggregateQualificationRuleSetId/);
-  assert.match(page,/aggregateValueField/);
+  assert.match(page,/metricSources/);
+  assert.match(page,/openMetricSourceRule/);
   assert.match(page,/selected_calculation_order:1/);
   assert.match(page,/selected_is_active:true/);
   assert.match(page,/selected_payout_timing_method:"annual"/);
