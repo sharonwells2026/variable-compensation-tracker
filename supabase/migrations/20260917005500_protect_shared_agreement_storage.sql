@@ -1,3 +1,9 @@
+alter table public.comp_plan_agreements
+  drop constraint if exists comp_plan_agreements_storage_path_key;
+
+create index if not exists comp_plan_agreements_storage_path_idx
+  on public.comp_plan_agreements(storage_path);
+
 create or replace function public.delete_comp_plan_agreement(selected_agreement_id uuid)
 returns jsonb
 language plpgsql
