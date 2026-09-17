@@ -17,6 +17,7 @@ test('ledger exposes source and calculation audit detail',()=>{
 
 test('payroll export describes payment-ready state rather than assuming finance timestamp',()=>{
   assert.match(report,/Payment-ready payroll report/);
-  assert.match(report,/all payment-required approvals and handoffs are complete/);
+  assert.match(report,/payment-ready status/);
+  assert.match(report,/Finance Accepted At was not populated/);
   assert.doesNotMatch(report,/Finance-accepted compensation that is ready for payroll/);
 });
