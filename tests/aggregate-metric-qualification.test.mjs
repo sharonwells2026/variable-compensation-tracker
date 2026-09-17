@@ -5,13 +5,13 @@ import {fileURLToPath} from "node:url";
 
 const root=fileURLToPath(new URL("..",import.meta.url));
 
-test("book-of-business editor exposes a configurable metric qualification rule",async()=>{
+test("book-of-business editor exposes configurable metric sources",async()=>{
   const page=await readFile(`${root}/app/plans/component/[componentId]/page.tsx`,"utf8");
-  assert.match(page,/Metric Qualification rule/);
+  assert.match(page,/Metric Sources/);
   assert.match(page,/metric_qualification/);
   assert.match(page,/Value to sum/);
-  assert.match(page,/aggregateQualificationRuleSetId/);
-  assert.match(page,/qualification_rule_set_id/);
+  assert.match(page,/metricSources/);
+  assert.match(page,/rule_set_id/);
   assert.match(page,/value_field/);
   assert.match(page,/Legacy source-Earning-Type compatibility/);
 });
