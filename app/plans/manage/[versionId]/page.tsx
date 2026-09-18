@@ -1,95 +1,50 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import {FormEvent,useEffect,useMemo,useState} from "react";
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
-import { createClient } from "@supabase/supabase-js";
-import { ArrowLeft, CalendarDays, ChevronRight, FileCheck2, Plus, Save, ShieldCheck, Users } from "lucide-react";
+import {useParams,useRouter} from "next/navigation";
+import {createClient} from "@supabase/supabase-js";
+import {ArrowLeft,ArrowRight,ChevronRight,Copy,Plus,Save,X} from "lucide-react";
+import PlanBuilderProgress from "../../components/plan-builder-progress";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || "https://bwdtbsqojtxfbeyfkang.supabase.co",
-  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || "sb_publishable_UEFOn-Rc0sczK9PwqVI91w_IAz95BcH"
-);
-
-type Component = { component_id:string; name:string; component_code:string; calculation_type:string|null; measurement_source:string|null; measurement_period:string|null; maximum_payout:number|null; rule_configuration:any };
-type Assignment = { employee_id:string; employee_name:string };
-type Version = { version_id:string; version_number:number; status:string; effective_start_date:string; effective_end_date:string|null; currency_code:string; notes?:string|null; components:Component[]; assignments:Assignment[]; draft_assignments:Assignment[] };
-type Plan = { plan_id:string; name:string; plan_code:string; description:string|null; versions:Version[] };
-
-function title(value:string|null|undefined){return String(value||"—").replaceAll("_"," ").replace(/\b\w/g,x=>x.toUpperCase())}
-function pct(value:any){return `${Number(value)*100}%`}
-function paySummary(component:Component){
- const cfg=component.rule_configuration||{};
- if(component.calculation_type==="percentage"&&cfg.rate!=null)return `${pct(cfg.rate)} of ${title(component.measurement_source)}`;
- if(component.calculation_type==="tiered_percentage"&&Array.isArray(cfg.tiers))return cfg.tiers.map((tier:any)=>`${tier.minimum_contract_years||0}${tier.maximum_contract_years?`–${tier.maximum_contract_years}`:"+"} yr: ${pct(tier.rate)}`).join(" · ");
- if(component.calculation_type==="threshold_bonus")return `${Number(cfg.threshold_amount||0).toLocaleString("en-US",{style:"currency",currency:"USD",maximumFractionDigits:0})} threshold → ${Number(cfg.bonus_amount||0).toLocaleString("en-US",{style:"currency",currency:"USD",maximumFractionDigits:0})} bonus`;
- if(component.calculation_type==="fixed_amount"&&cfg.amount!=null)return Number(cfg.amount).toLocaleString("en-US",{style:"currency",currency:"USD"});
- return title(component.calculation_type);
-}
+const supabase=createClient(process.env.NEXT_PUBLIC_SUPABASE_URL||"https://bwdtbsqojtxfbeyfkang.supabase.co",process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY||"sb_publishable_UEFOn-Rc0sczK9PwqVI91w_IAz95BcH");
+type Component={component_id:string;name:string;component_code:string;calculation_type:string|null;measurement_source:string|null;measurement_period:string|null;maximum_payout:number|null;rule_configuration:any};
+type Assignment={employee_id:string;employee_name:string};
+type Version={version_id:string;version_number:number;status:string;effective_start_date:string;effective_end_date:string|null;currency_code:string;notes?:string|null;components:Component[];assignments:Assignment[];draft_assignments:Assignment[]};
+type Plan={plan_id:string;name:string;plan_code:string;description:string|null;versions:Version[]};
+const title=(value:string|null|undefined)=>String(value||"—").replaceAll("_"," ").replace(/\b\w/g,x=>x.toUpperCase());
+const pct=(value:any)=>`${Number(value)*100}%`;
+const slug=(v:string)=>v.toUpperCase().trim().replace(/[^A-Z0-9]+/g,"_").replace(/^_+|_+$/g,"").slice(0,80);
+function paySummary(component:Component){const cfg=component.rule_configuration||{};if(component.calculation_type==="percentage"&&cfg.rate!=null)return `${pct(cfg.rate)} of ${title(component.measurement_source)}`;if(component.calculation_type==="tiered_percentage"&&Array.isArray(cfg.tiers))return cfg.tiers.map((tier:any)=>`${tier.minimum_contract_years||0}${tier.maximum_contract_years?`–${tier.maximum_contract_years}`:"+"} yr: ${pct(tier.rate)}`).join(" · ");if(component.calculation_type==="threshold_bonus")return `${Number(cfg.threshold_amount||0).toLocaleString("en-US",{style:"currency",currency:"USD",maximumFractionDigits:0})} threshold → ${Number(cfg.bonus_amount||0).toLocaleString("en-US",{style:"currency",currency:"USD",maximumFractionDigits:0})} bonus`;if(component.calculation_type==="fixed_amount"&&cfg.amount!=null)return Number(cfg.amount).toLocaleString("en-US",{style:"currency",currency:"USD"});return title(component.calculation_type)}
 
 export default function ManageDraftPlan(){
- const params=useParams<{versionId:string}>();
- const router=useRouter();
+ const params=useParams<{versionId:string}>();const router=useRouter();
  const[plans,setPlans]=useState<Plan[]>([]),[loading,setLoading]=useState(true),[saving,setSaving]=useState(false),[error,setError]=useState(""),[message,setMessage]=useState("");
  const[startDate,setStartDate]=useState(""),[endDate,setEndDate]=useState(""),[currency,setCurrency]=useState("USD"),[notes,setNotes]=useState(""),[dirty,setDirty]=useState(false);
-
- useEffect(()=>{(async()=>{setLoading(true);const{data,error:loadError}=await supabase.rpc("get_compensation_plan_admin_data");if(loadError){setError(loadError.message);setLoading(false);return}const loaded=(data?.plans||[]) as Plan[];setPlans(loaded);for(const p of loaded){const v=p.versions.find(x=>x.version_id===params.versionId);if(v){setStartDate(v.effective_start_date||"");setEndDate(v.effective_end_date||"");setCurrency(v.currency_code||"USD");setNotes(v.notes||"");break}}setDirty(false);setLoading(false)})()},[params.versionId]);
- useEffect(()=>{const onBeforeUnload=(e:BeforeUnloadEvent)=>{if(!dirty)return;e.preventDefault();e.returnValue=""};window.addEventListener("beforeunload",onBeforeUnload);return()=>window.removeEventListener("beforeunload",onBeforeUnload)},[dirty]);
-
- const plan=useMemo(()=>plans.find(p=>p.versions.some(v=>v.version_id===params.versionId))||null,[plans,params.versionId]);
- const version=plan?.versions.find(v=>v.version_id===params.versionId)||null;
- const people=version?.status==="draft"?version.draft_assignments:version?.assignments||[];
- const markDirty=()=>{setDirty(true);setMessage("")};
-
- const saveDraft=async()=>{
-  if(!version||version.status!=="draft")return false;
-  if(endDate&&startDate&&endDate<startDate){setError("Effective end date cannot be before the effective start date.");return false}
-  setSaving(true);setError("");setMessage("");
-  const{error:saveError}=await supabase.rpc("update_compensation_plan_draft_version",{selected_plan_version_id:version.version_id,selected_effective_start_date:startDate,selected_effective_end_date:endDate||null,selected_currency_code:currency,selected_notes:notes||null});
-  setSaving(false);
-  if(saveError){setError("We couldn't save the plan details. Your changes are still on this page. Please try again.");return false}
-  setDirty(false);setMessage("Plan dates and details saved.");return true;
- };
- const save=async(event:FormEvent)=>{event.preventDefault();await saveDraft()};
- const go=async(href:string)=>{
-  if(!dirty){router.push(href);return}
-  const shouldSave=window.confirm("You have unsaved plan details. Save them before leaving this page?");
-  if(!shouldSave)return;
-  const ok=await saveDraft();if(ok)router.push(href);
- };
- const guardLink=(event:React.MouseEvent<HTMLAnchorElement>,href:string)=>{if(!dirty)return;event.preventDefault();void go(href)};
-
+ const[cloneSource,setCloneSource]=useState<Component|null>(null),[cloneName,setCloneName]=useState(""),[cloneCode,setCloneCode]=useState(""),[cloning,setCloning]=useState(false);
+ const load=async()=>{setLoading(true);const{data,error:loadError}=await supabase.rpc("get_compensation_plan_admin_data");if(loadError){setError(loadError.message);setLoading(false);return}const loaded=(data?.plans||[]) as Plan[];setPlans(loaded);for(const p of loaded){const v=p.versions.find(x=>x.version_id===params.versionId);if(v){setStartDate(v.effective_start_date||"");setEndDate(v.effective_end_date||"");setCurrency(v.currency_code||"USD");setNotes(v.notes||"");break}}setDirty(false);setLoading(false)};
+ useEffect(()=>{void load()},[params.versionId]);
+ useEffect(()=>{document.body.dataset.planDirty=dirty?"true":"false";const onBeforeUnload=(e:BeforeUnloadEvent)=>{if(!dirty)return;e.preventDefault();e.returnValue=""};window.addEventListener("beforeunload",onBeforeUnload);return()=>{delete document.body.dataset.planDirty;window.removeEventListener("beforeunload",onBeforeUnload)}},[dirty]);
+ const plan=useMemo(()=>plans.find(p=>p.versions.some(v=>v.version_id===params.versionId))||null,[plans,params.versionId]);const version=plan?.versions.find(v=>v.version_id===params.versionId)||null;const people=version?.status==="draft"?version.draft_assignments:version?.assignments||[];
+ const saveDraft=async()=>{if(!version||version.status!=="draft")return false;if(endDate&&startDate&&endDate<startDate){setError("Effective end date cannot be before the effective start date.");return false}setSaving(true);setError("");const{error:saveError}=await supabase.rpc("update_compensation_plan_draft_version",{selected_plan_version_id:version.version_id,selected_effective_start_date:startDate,selected_effective_end_date:endDate||null,selected_currency_code:currency,selected_notes:notes||null});setSaving(false);if(saveError){setError("We couldn't save the plan details. Please try again.");return false}setDirty(false);setMessage("Saved.");return true};
+ const save=async(e:FormEvent)=>{e.preventDefault();await saveDraft()};
+ const go=async(href:string)=>{if(dirty){const ok=await saveDraft();if(!ok)return}router.push(href)};
+ const startClone=(component:Component)=>{setCloneSource(component);setCloneName(`${component.name} copy`);setCloneCode(slug(`${component.component_code}_COPY`));setError("");setMessage("")};
+ const clone=async()=>{if(!cloneSource||!version)return;if(!cloneName.trim()||!cloneCode.trim()){setError("Give the cloned Earning Type a name and code.");return}setCloning(true);setError("");const{data,error:e}=await supabase.rpc("clone_compensation_plan_component",{source_component_id:cloneSource.component_id,target_plan_version_id:version.version_id,selected_name:cloneName.trim(),selected_component_code:cloneCode.trim()});setCloning(false);if(e){setError(e.message);return}const id=String(data?.component_id||"");setCloneSource(null);if(id)router.push(`/plans/component/${id}?version=${version.version_id}&cloned=1`);else{setMessage("Earning Type cloned.");await load()}};
  if(loading)return <main className="plan-workspace"><div className="plan-page-shell"><div className="plan-empty">Loading plan…</div></div></main>;
  if(!plan||!version)return <main className="plan-workspace"><div className="plan-page-shell"><div className="plan-alert error">Plan version not found.</div></div></main>;
- if(version.status!=="draft")return <main className="plan-workspace"><div className="plan-page-shell"><div className="plan-alert warning">Only draft versions can be managed here.</div><Link className="plan-button secondary" href={`/plans?version=${version.version_id}`}>Back to plan</Link></div></main>;
-
+ if(version.status!=="draft")return <main className="plan-workspace"><div className="plan-page-shell"><div className="plan-alert warning">Only draft versions can be managed here.</div><Link className="plan-button secondary" href="/plans">Back to plans</Link></div></main>;
  return <main className="plan-workspace"><div className="plan-page-shell" style={{paddingBottom:80}}>
-  <div className="plan-breadcrumb"><Link href={`/plans?version=${version.version_id}`} onClick={e=>guardLink(e,`/plans?version=${version.version_id}`)}><ArrowLeft size={15}/>Plan</Link><span>/</span><span>Manage draft</span></div>
-  <header className="plan-page-header"><div><span className="plan-kicker">DRAFT PLAN</span><h1>Manage {plan.name}</h1><p>Draft v{version.version_number}. Configure the plan here, then use readiness to approve and activate it.</p></div><span className="plan-status draft">Draft v{version.version_number}</span></header>
+  <div className="plan-breadcrumb"><Link href="/plans"><ArrowLeft size={15}/>Plans</Link><span>/</span><span>{plan.name}</span></div>
+  <PlanBuilderProgress versionId={version.version_id} current="earnings" completed={{basics:true,people:people.length>0,earnings:version.components.length>0}} onNavigate={href=>void go(href)}/>
+  <header className="plan-page-header"><div><span className="plan-kicker">STEP 3 OF 6</span><h1>What can they earn?</h1><p>Create each Earning Type in this plan. Each one defines the payout, qualifying activity, when it is Earned, and when it becomes eligible for payment.</p></div><span className="plan-status draft">Draft v{version.version_number}</span></header>
   {error&&<div className="plan-alert error">{error}</div>}{message&&<div className="plan-info-row">{message}</div>}
-
-  <form className="plan-editor-card" onSubmit={save}>
-   <section><div className="plan-editor-heading"><div><CalendarDays size={20}/><div><h2>Effective dates</h2><p>These dates determine when this version governs earnings. They do not change the active plan until this draft is approved and activated.</p></div></div></div>
-    <div className="plan-form-grid two">
-     <label>Effective start date *<input type="date" required value={startDate} onChange={e=>{setStartDate(e.target.value);markDirty()}}/></label>
-     <label>Effective end date<input type="date" min={startDate||undefined} value={endDate} onChange={e=>{setEndDate(e.target.value);markDirty()}}/><small>Leave blank when the plan has no planned end date.</small></label>
-     <label>Currency<select value={currency} onChange={e=>{setCurrency(e.target.value);markDirty()}}><option value="USD">USD</option></select></label>
-     <label>Version notes<textarea rows={2} value={notes} onChange={e=>{setNotes(e.target.value);markDirty()}} placeholder="What changed in this version?"/></label>
-    </div>
-    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:12,marginTop:14,flexWrap:"wrap"}}><span style={{fontSize:12,color:dirty?"#9a6700":"#667085",fontWeight:dirty?700:500}}>{dirty?"Unsaved plan details":"Plan details saved"}</span><button className="plan-button brand" disabled={saving||!dirty}><Save size={14}/>{saving?"Saving…":"Save plan details"}</button></div>
-   </section>
-  </form>
-
-  <section className="plan-section"><div className="plan-section-title"><div><h3>Earning Types & conditions</h3><p>Each earning type contains its payout logic, Earned conditions, and Eligible-for-payment conditions in one editor.</p></div><Link className="plan-button brand" href={`/plans/component/new?version=${version.version_id}`} onClick={e=>guardLink(e,`/plans/component/new?version=${version.version_id}`)}><Plus size={14}/>Add Earning Type</Link></div>
-   {version.components.map(component=><Link key={component.component_id} href={`/plans/component/${component.component_id}?version=${version.version_id}`} onClick={e=>guardLink(e,`/plans/component/${component.component_id}?version=${version.version_id}`)} style={{textDecoration:"none",color:"inherit",display:"grid",gridTemplateColumns:"minmax(220px,1.2fr) minmax(260px,1.8fr) 28px",gap:16,alignItems:"center",border:"1px solid #e3e8ef",borderRadius:10,padding:"14px 16px",marginTop:10,background:"white"}}><div><b>{component.name}</b><div style={{fontSize:11,color:"#667085",fontFamily:"monospace",marginTop:3}}>{component.component_code}</div></div><div><small style={{color:"#667085"}}>PAYOUT</small><div style={{fontSize:12,fontWeight:700,marginTop:3}}>{paySummary(component)}</div><div style={{fontSize:11,color:"#667085",marginTop:4}}>{title(component.measurement_period)} · based on {title(component.measurement_source)}{component.maximum_payout!=null?` · max ${Number(component.maximum_payout).toLocaleString("en-US",{style:"currency",currency:"USD",maximumFractionDigits:0})}`:""}</div></div><ChevronRight size={18}/></Link>)}
-   {!version.components.length&&<div className="plan-empty">No Earning Types yet.</div>}
+  <details className="plan-step-card"><summary style={{cursor:"pointer",fontWeight:800}}>Plan dates & internal details</summary><form onSubmit={save} style={{marginTop:16}}><div className="plan-form-grid two"><label>Effective start date *<input type="date" required value={startDate} onChange={e=>{setStartDate(e.target.value);setDirty(true)}}/></label><label>Effective end date<input type="date" min={startDate||undefined} value={endDate} onChange={e=>{setEndDate(e.target.value);setDirty(true)}}/></label><label>Currency<select value={currency} onChange={e=>{setCurrency(e.target.value);setDirty(true)}}><option value="USD">USD</option></select></label><label>Version notes<textarea rows={2} value={notes} onChange={e=>{setNotes(e.target.value);setDirty(true)}} placeholder="Optional"/></label></div><div className="plan-actions"><span style={{marginRight:"auto",fontSize:12,color:dirty?"#9a6700":"#667085"}}>{dirty?"Unsaved changes":"Saved"}</span><button className="plan-button secondary" disabled={saving||!dirty}><Save size={14}/>{saving?"Saving…":"Save details"}</button></div></form></details>
+  <section id="earning-types" className="plan-step-card"><div className="plan-step-card__head"><div><h2>Earning Types</h2><p>Use one Earning Type for one compensation concept. Tiered rates such as 8% / 10% / 12% belong inside a single Earning Type. Clone a similar Earning Type when only the rate or qualifying activity changes.</p></div><Link className="plan-button brand" href={`/plans/component/new?version=${version.version_id}`}><Plus size={14}/>Add Earning Type</Link></div>
+   {version.components.map(component=><div key={component.component_id} className="plan-earning-row"><Link href={`/plans/component/${component.component_id}?version=${version.version_id}`} className="plan-earning-row__main"><div><b>{component.name}</b><div className="plan-earning-row__code">{component.component_code}</div></div><div><div className="plan-earning-row__payout">{paySummary(component)}</div><div className="plan-earning-row__meta">{title(component.measurement_period)} · {title(component.measurement_source)}</div></div><ChevronRight size={18}/></Link><button type="button" className="plan-button secondary" onClick={()=>startClone(component)}><Copy size={14}/>Clone</button></div>)}
+   {!version.components.length&&<div className="plan-empty">No Earning Types yet. Add the first one to continue.</div>}
+   {cloneSource&&<div className="plan-clone-panel"><div className="plan-step-card__head"><div><h3>Clone {cloneSource.name}</h3><p>Payout settings, Earned rules, payment conditions, and credit/attribution rules are copied. Change only what is different.</p></div><button type="button" className="plan-button secondary" onClick={()=>setCloneSource(null)} aria-label="Close clone panel"><X size={14}/></button></div><div className="plan-form-grid two"><label>New Earning Type name<input value={cloneName} onChange={e=>{setCloneName(e.target.value);if(cloneCode.endsWith("_COPY"))setCloneCode(slug(`${e.target.value}_COPY`))}}/></label><label>New code<input value={cloneCode} onChange={e=>setCloneCode(slug(e.target.value))}/></label></div><div className="plan-actions"><button type="button" className="plan-button secondary" onClick={()=>setCloneSource(null)}>Cancel</button><button type="button" className="plan-button brand" disabled={cloning} onClick={()=>void clone()}><Copy size={14}/>{cloning?"Cloning…":"Clone & edit"}</button></div></div>}
   </section>
-
-  <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(260px,1fr))",gap:16,marginTop:16}}>
-   <section className="plan-section" style={{margin:0}}><div className="plan-section-title"><div><h3>People</h3><p>{people.length} employee{people.length===1?"":"s"} currently included in this draft.</p></div><Link className="plan-button secondary" href={`/plans/applicability/${version.version_id}`} onClick={e=>guardLink(e,`/plans/applicability/${version.version_id}`)}><Users size={14}/>Manage people</Link></div>{people.map(person=><div key={person.employee_id} style={{fontSize:13,padding:"8px 0",borderTop:"1px solid #eef1f4"}}>{person.employee_name}</div>)}</section>
-   <section className="plan-section" style={{margin:0}}><div className="plan-section-title"><div><h3>Approvals</h3><p>Define who must approve earnings generated under this plan.</p></div><Link className="plan-button secondary" href={`/plans/manage/${version.version_id}/approvals`} onClick={e=>guardLink(e,`/plans/manage/${version.version_id}/approvals`)}><ShieldCheck size={14}/>Manage approvals</Link></div><p style={{fontSize:12,color:"#667085",lineHeight:1.6}}>At least one required approval step is needed before the plan can be approved.</p></section>
-   <section className="plan-section" style={{margin:0}}><div className="plan-section-title"><div><h3>Agreements</h3><p>Attach signed compensation agreements for employees assigned to this plan.</p></div><Link className="plan-button secondary" href={`/plans/agreements/${version.version_id}`} onClick={e=>guardLink(e,`/plans/agreements/${version.version_id}`)}><FileCheck2 size={14}/>Manage agreements</Link></div><p style={{fontSize:12,color:"#667085",lineHeight:1.6}}>Readiness will identify anyone assigned to the plan who is still missing an agreement.</p></section>
-   <section className="plan-section" style={{margin:0}}><h3 style={{marginTop:0}}>Ready to review?</h3><p style={{fontSize:12,color:"#667085",lineHeight:1.6}}>Readiness checks earning types, Earned conditions, payment conditions, effective dates, people, agreements, and plan approvals before approval is allowed.</p><button type="button" className="plan-button brand" onClick={()=>void go(`/plans?version=${version.version_id}`)}>Review readiness</button></section>
-  </div>
+  <div className="plan-wizard-actions"><button type="button" className="plan-button secondary" onClick={()=>void go(`/plans/applicability/${version.version_id}`)}><ArrowLeft size={15}/>Back</button><div className="plan-wizard-actions__right"><button type="button" className="plan-button brand" disabled={!version.components.length} onClick={()=>void go(`/plans/agreements/${version.version_id}`)}>Next step<ArrowRight size={15}/></button></div></div>
  </div></main>;
 }
