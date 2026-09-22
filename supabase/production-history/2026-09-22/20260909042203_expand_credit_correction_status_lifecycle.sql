@@ -1,0 +1,2 @@
+alter table public.comp_credit_correction_requests drop constraint if exists comp_credit_correction_requests_status_check;
+alter table public.comp_credit_correction_requests add constraint comp_credit_correction_requests_status_check check (status = any(array['pending_review'::text,'approved_for_correction'::text,'ready_to_apply'::text,'adjustment_pending'::text,'rejected'::text,'cancelled'::text,'applied'::text]));

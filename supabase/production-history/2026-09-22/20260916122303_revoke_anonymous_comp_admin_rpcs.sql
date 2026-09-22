@@ -1,0 +1,14 @@
+revoke execute on function public.get_comp_component_attainment(uuid,uuid,integer) from public, anon;
+revoke execute on function public.preview_comp_component_aggregate(uuid,date) from public, anon;
+revoke execute on function public.refresh_comp_aggregate_earnings(integer) from public, anon;
+revoke execute on function public.get_comp_component_attribution_config(uuid) from public, anon;
+revoke execute on function public.save_comp_component_attribution(uuid,text) from public, anon;
+revoke execute on function public.get_comp_plan_approval_configuration(uuid) from public, anon;
+revoke execute on function public.save_comp_plan_approval_configuration(uuid,jsonb) from public, anon;
+grant execute on function public.get_comp_component_attainment(uuid,uuid,integer) to authenticated;
+grant execute on function public.preview_comp_component_aggregate(uuid,date) to authenticated;
+grant execute on function public.refresh_comp_aggregate_earnings(integer) to authenticated;
+grant execute on function public.get_comp_component_attribution_config(uuid) to authenticated;
+grant execute on function public.save_comp_component_attribution(uuid,text) to authenticated;
+grant execute on function public.get_comp_plan_approval_configuration(uuid) to authenticated;
+grant execute on function public.save_comp_plan_approval_configuration(uuid,jsonb) to authenticated;
