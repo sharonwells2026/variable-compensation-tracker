@@ -8,6 +8,21 @@ HubSpot remains authoritative for CRM facts. RevOS Core owns the shared HubSpot 
 
 Compensation-specific rules, semantic mappings, attribution logic, plan configuration, earnings, approvals and history remain Compensation-owned.
 
+## Required RevOS HubSpot Integration model
+RevOS HubSpot Integration is intended to be dynamic and administrator-configurable, not a fixed schema contract limited to a predefined list of HubSpot fields.
+
+Target behavior:
+1. An administrator selects a HubSpot object in RevOS HubSpot Integration.
+2. RevOS discovers the available HubSpot properties for that object.
+3. All available properties for the selected object are represented in the shared integration field catalog.
+4. Each property can be configured for use and independently shown or hidden in RevOS.
+5. Modules such as Compensation consume the shared configured field catalog rather than maintaining their own permanent HubSpot property-discovery/sync system.
+6. Adding a new HubSpot property should normally be an integration configuration change, not a Compensation code/schema redesign.
+7. Typed columns may still exist for high-value shared fields used frequently by analytics or joins, but typed columns are an optimization/convenience layer, not the boundary of what RevOS can expose.
+8. The raw synchronized HubSpot record and field catalog/mapping layer must preserve access to selected properties even when no dedicated typed column exists.
+
+This dynamic configuration model is the long-term contract. The field list below is therefore a migration dependency list showing what Compensation currently uses, not a hard-coded permanent allowlist for RevOS.
+
 ## Current shared coverage in RevOS Core
 RevOS Core already contains shared caches/read models for:
 - deals
@@ -66,10 +81,12 @@ Compensation currently exposes or references:
 - `signed_contract`
 
 Target rule:
-1. If a field is used in active production calculations, eligibility, payment conditions or attribution, it must be available through the shared Core integration layer.
-2. Add a typed Core column only when typed access is operationally required.
-3. Otherwise consume the authoritative HubSpot value through Core raw payload / integration field catalog.
-4. Do not create a Compensation-only duplicate HubSpot deal table in Core.
+1. If a field is used in active production calculations, eligibility, payment conditions or attribution, it must be selected/exposed through the shared Core HubSpot Integration configuration.
+2. All HubSpot properties for the selected object remain discoverable through the shared field catalog, whether or not Compensation uses them today.
+3. Show/hide is a RevOS presentation/configuration decision and must not imply deletion or loss of the underlying synchronized property.
+4. Add a typed Core column only when typed access is operationally required for joins, high-volume analytics, indexing or other shared behavior.
+5. Otherwise consume the authoritative HubSpot value through the shared raw record / integration field catalog / mapping layer.
+6. Do not create a Compensation-only duplicate HubSpot deal table in Core.
 
 ### User attribution fields
 Compensation currently has active user-field semantics for:
@@ -85,9 +102,10 @@ Current attribution behavior includes:
 - plan-component-specific pipeline and deal-type qualifiers
 
 Target:
-- Core transports/synchronizes the source HubSpot owner/user facts.
+- Core transports/synchronizes the selected HubSpot owner/user facts through the common configurable integration.
 - Compensation continues to own the meaning of those fields for credit and metric attribution.
-- CEM/owner fields required by active logic must be added to or exposed through the Core integration contract before legacy Compensation HubSpot caches are retired.
+- CEM/owner fields required by active logic must be selected and available through the Core integration contract before legacy Compensation HubSpot caches are retired.
+- Future HubSpot owner/user properties should be selectable through HubSpot Integration without adding a Compensation-specific sync path.
 
 ### Deal rule dimensions
 Active Compensation deal rules currently depend on specific:
@@ -126,6 +144,7 @@ Core already has the primary meeting facts, but Compensation's QDC logic also in
 
 Target:
 - reuse Core `hubspot_meetings` and associations as transport/read models;
+- allow meeting properties to be configured through the shared HubSpot Integration in the same manner as other HubSpot objects;
 - preserve Compensation QDC candidate/evidence/deduplication behavior;
 - validate the branch-only QDC model separately before promotion.
 
@@ -141,21 +160,26 @@ Current generic rule predicates reference:
 - deal `invoice_paid_date`
 - deal `pipeline`
 
-These are minimum behavioral dependencies. Eligible mapping fields are broader because they define what administrators can configure in the rule builder.
+These are minimum behavioral dependencies, not the complete RevOS HubSpot field universe. Eligible mapping fields are broader because they define what administrators can configure in the rule builder.
 
 ## Migration gate
 The standalone Compensation HubSpot tables may not be retired until:
+- each Compensation-required HubSpot object is available through RevOS HubSpot Integration;
+- all relevant properties are discoverable in the shared field catalog;
+- each currently active required property is selected/exposed in the target configuration;
 - every active predicate field resolves from Core;
 - every active amount source produces equivalent values;
 - every active attribution rule produces equivalent ownership/credit results;
 - pipeline/stage/deal-type behavior matches;
 - meeting/QDC candidate results match;
 - rule-builder field options remain functionally equivalent;
+- show/hide configuration does not remove source data required by calculations;
 - historical source snapshots remain preserved.
 
 ## Classification
-- HubSpot-authoritative facts: all CRM source fields above
-- Core synchronized cache/read model: shared HubSpot records and associations
+- HubSpot-authoritative facts: all CRM source fields above and any future properties selected through HubSpot Integration
+- Core synchronized cache/read model: shared HubSpot records, associations and configured properties
+- RevOS integration configuration: selected HubSpot objects, selected properties, show/hide settings, mappings and versions
 - Compensation configuration: rule predicates, amount-source semantics, attribution rules, mapping eligibility, plan/component logic
 - Compensation derived behavior: candidate qualification, credit, attainment, earning eligibility
 - Historical/audit: existing mapping snapshots, changes and compensation outcomes
