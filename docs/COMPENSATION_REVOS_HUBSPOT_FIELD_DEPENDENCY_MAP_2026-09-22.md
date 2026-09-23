@@ -23,6 +23,21 @@ Target behavior:
 
 This dynamic configuration model is the long-term contract. The field list below is therefore a migration dependency list showing what Compensation currently uses, not a hard-coded permanent allowlist for RevOS.
 
+
+## Compensation migration default profile
+For the Compensation migration, use the current standalone Compensation HubSpot configuration as the **initial/default RevOS Compensation integration profile**.
+
+This means:
+- HubSpot objects currently enabled for Compensation should be enabled by default when Compensation is migrated.
+- HubSpot properties currently exposed/eligible for Compensation should be enabled by default in the migrated Compensation profile.
+- Existing Compensation field labels, mappings, rule-builder availability, attribution semantics and calculation dependencies should be preserved as the starting configuration.
+- Existing hidden/not-used properties do not become permanently excluded; they remain discoverable through RevOS HubSpot Integration.
+- Administrators can later enable, disable, show, hide, remap or add properties through RevOS HubSpot Integration without changing Compensation code.
+- Future HubSpot objects and properties can be added to Compensation through the same RevOS configuration model.
+- Changes that would affect an active Compensation rule, calculation, attribution, eligibility condition or historical interpretation should be validated and audited before taking effect.
+
+The migrated configuration is therefore a **seed/default configuration**, not a hard-coded product constraint.
+
 ## Current shared coverage in RevOS Core
 RevOS Core already contains shared caches/read models for:
 - deals
